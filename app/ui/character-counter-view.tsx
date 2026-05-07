@@ -1,3 +1,6 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { List, TextCursorInput, Trash2, WholeWord, type LucideIcon } from "lucide-react";
 import { Breadcrumbs, Button, Card, PageTitle } from "./primitives";
 import { DevBoxShell } from "./shell";
@@ -9,6 +12,19 @@ const metrics = [
 ];
 
 export function CharacterCounterPage() {
+  const [text, setText] = useState("");
+
+  const charCount = text.length;
+  const wordCount = useMemo(
+    () => (text.trim() === "" ? 0 : text.trim().split(/\s+/).length),
+    [text],
+  );
+  const lineCount = useMemo(
+    () => (text === "" ? 0 : text.split("\n").length),
+    [text],
+  );
+  const metricValues = [charCount, wordCount, lineCount];
+
   return (
     <DevBoxShell active="character-counter">
       <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: "Text Tools" }, { label: "Character / Word Counter" }]} />
@@ -29,7 +45,7 @@ export function CharacterCounterPage() {
               Text Analysis
             </h2>
           </div>
-          <Button variant="ghost">
+          <Button onClick={() => setText("")} variant="ghost">
             <Trash2 aria-hidden className="size-3" strokeWidth={2} />
             Clear
           </Button>
@@ -37,14 +53,24 @@ export function CharacterCounterPage() {
 
         <div className="grid min-h-[504px] gap-5 p-6 lg:grid-cols-[minmax(0,1fr)_200px]">
           <div className="flex min-h-[320px] rounded-lg border border-[var(--border)] bg-[var(--bg-hover)] p-4">
-            <p className="text-sm leading-[1.6] text-[var(--text-muted)]">
-              Paste or type your text here...
-            </p>
+            <textarea
+              aria-label="Text input"
+              className="h-full w-full resize-none bg-transparent font-mono text-sm leading-[1.6] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Paste or type your text here..."
+              spellCheck={false}
+              value={text}
+            />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            {metrics.map((metric) => (
-              <MetricCard icon={metric.icon} key={metric.label} label={metric.label} />
+            {metrics.map((metric, index) => (
+              <MetricCard
+                icon={metric.icon}
+                key={metric.label}
+                label={metric.label}
+                value={metricValues[index]}
+              />
             ))}
           </div>
         </div>
@@ -53,7 +79,7 @@ export function CharacterCounterPage() {
   );
 }
 
-function MetricCard({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+function MetricCard({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: number }) {
   return (
     <div className="flex min-h-[84px] flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-hover)] p-4">
       <div className="flex min-w-0 items-center gap-1.5">
@@ -64,7 +90,7 @@ function MetricCard({ icon: Icon, label }: { icon: LucideIcon; label: string }) 
         />
         <span className="truncate text-xs font-medium text-[var(--text-secondary)]">{label}</span>
       </div>
-      <span className="text-[28px] font-bold leading-none text-[var(--text-primary)]">0</span>
+      <span className="text-[28px] font-bold leading-none text-[var(--text-primary)]">{value}</span>
     </div>
   );
 }
