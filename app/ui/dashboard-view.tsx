@@ -41,7 +41,7 @@ export function DashboardPage() {
                   <p className="min-h-8 text-[13px] leading-4 text-[var(--text-secondary)]">
                     {tool.description}
                   </p>
-                  <span className="mt-auto inline-flex h-8 w-fit items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3.5 text-xs font-medium text-[var(--text-on-primary)] transition-colors group-hover:bg-[var(--primary-hover)]">
+                  <span className="mt-auto inline-flex h-8 w-fit items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3.5 text-xs font-medium text-white transition-colors group-hover:bg-[var(--primary-hover)] dark:border dark:border-[var(--border)] dark:bg-[#30363d] dark:text-[#e6edf3] dark:group-hover:bg-[var(--bg-hover)]">
                     Open tool
                     <ArrowRight aria-hidden className="size-3.5" strokeWidth={2} />
                   </span>

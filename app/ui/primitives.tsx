@@ -98,11 +98,11 @@ export function Button({
       className={cx(
         "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors",
         variant === "default" &&
-          "bg-[var(--primary)] text-[var(--text-on-primary)] hover:bg-[var(--primary-hover)]",
+          "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] dark:border dark:border-[var(--border)] dark:bg-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[var(--bg-hover)]",
         variant === "outline" &&
-          "border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
+          "border border-[var(--border)] bg-white text-[var(--text-primary)] hover:bg-[var(--bg-hover)] dark:bg-[#1b1f23] dark:text-[#e6edf3]",
         variant === "ghost" &&
-          "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
+          "text-[var(--text-primary)] hover:bg-[var(--bg-hover)] dark:text-[#e6edf3]",
       )}
     >
       {children}
