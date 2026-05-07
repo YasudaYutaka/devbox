@@ -1,7 +1,12 @@
 import type { LucideIcon } from "lucide-react";
-import { Braces, GitCompareArrows, KeyRound } from "lucide-react";
+import { Braces, GitCompareArrows, KeyRound, WholeWord } from "lucide-react";
 
-export type ToolSlug = "dashboard" | "uuid-tools" | "json-formatter" | "text-diff";
+export type ToolSlug =
+  | "dashboard"
+  | "uuid-tools"
+  | "json-formatter"
+  | "text-diff"
+  | "character-counter";
 
 export type Tool = {
   slug: ToolSlug;
@@ -43,6 +48,15 @@ export const tools: Tool[] = [
     subtype: "Comparator",
     description: "Compare two texts and highlight differences.",
   },
+  {
+    slug: "character-counter",
+    href: "/character-counter",
+    title: "Character / Word Counter",
+    section: "TEXT TOOLS",
+    icon: WholeWord,
+    subtype: "Text Tool",
+    description: "Count characters, words, and lines instantly.",
+  },
 ];
 
 export const sectionOrder = [
@@ -57,4 +71,5 @@ export const activeBySlug: Record<ToolSlug, string> = {
   "uuid-tools": "UUID Tools",
   "json-formatter": "JSON Formatter & Validator",
   "text-diff": "Text Diff",
+  "character-counter": "Character / Word Counter",
 };
