@@ -15,6 +15,13 @@
   --primary-hover: #0747a6;
   --success: #36b37e;
   --success-bg: #e3fcef;
+  --warning: #ff991f;
+  --warning-bg: #fff7e6;
+  --error: #de350b;
+  --error-bg: #ffebe6;
+  --diff-added: #dafbe1;
+  --diff-removed: #ffebe6;
+  --diff-changed: #fff7e6;
   --badge-soon-bg: #f4f5f7;
   --badge-soon-text: #97a0af;
   --text-primary: #172b4d;
@@ -45,6 +52,13 @@
   --primary-hover: #79b8ff;
   --success: #57d9a3;
   --success-bg: #1b3a2d;
+  --warning: #ffab00;
+  --warning-bg: #3d2e00;
+  --error: #ff6b6b;
+  --error-bg: #3d1515;
+  --diff-added: #1b3a2d;
+  --diff-removed: #3d1515;
+  --diff-changed: #3d2e00;
   --badge-soon-bg: #2d333b;
   --badge-soon-text: #636c76;
   --text-primary: #e6edf3;
