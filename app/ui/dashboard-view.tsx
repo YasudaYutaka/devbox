@@ -50,7 +50,7 @@ export function DashboardPage() {
             })}
           </div>
           <DashboardPillSection title="Recently used" items={recentlyUsedItems} />
-          <DashboardPillSection title="Coming soon" items={comingSoonItems} muted />
+          {/* <DashboardPillSection title="Coming soon" items={comingSoonItems} muted /> */}
         </div>
       </div>
     </DevBoxShell>
