@@ -86,23 +86,30 @@ export function CardHeader({
   );
 }
 
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "default" | "outline" | "ghost";
+};
+
 export function Button({
   children,
+  className,
   variant = "default",
-}: {
-  children: React.ReactNode;
-  variant?: "default" | "outline" | "ghost";
-}) {
+  type = "button",
+  ...props
+}: ButtonProps) {
   return (
     <button
+      type={type}
+      {...props}
       className={cx(
-        "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors",
+        "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         variant === "default" &&
           "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] dark:border dark:border-[var(--border)] dark:bg-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[var(--bg-hover)]",
         variant === "outline" &&
           "border border-[var(--border)] bg-white text-[var(--text-primary)] hover:bg-[var(--bg-hover)] dark:bg-[#1b1f23] dark:text-[#e6edf3]",
         variant === "ghost" &&
           "text-[var(--text-primary)] hover:bg-[var(--bg-hover)] dark:text-[#e6edf3]",
+        className,
       )}
     >
       {children}
@@ -110,9 +117,21 @@ export function Button({
   );
 }
 
-export function Badge({ children }: { children: React.ReactNode }) {
+export function Badge({
+  children,
+  variant = "success",
+}: {
+  children: React.ReactNode;
+  variant?: "success" | "danger";
+}) {
   return (
-    <span className="inline-flex h-6 items-center rounded-full bg-[var(--success-bg)] px-2.5 text-[11px] font-medium text-[var(--success)]">
+    <span
+      className={cx(
+        "inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-medium",
+        variant === "success" && "bg-[var(--success-bg)] text-[var(--success)]",
+        variant === "danger" && "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300",
+      )}
+    >
       {children}
     </span>
   );
