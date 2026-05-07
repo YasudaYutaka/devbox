@@ -1,17 +1,26 @@
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 export function cx(...classes: Array<string | false | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
-export function Breadcrumbs({ items }: { items: [string, string, string] }) {
+type BreadcrumbItem = { label: string; href?: string };
+
+export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
     <nav className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--text-secondary)]">
       {items.map((item, index) => (
-        <span className="flex items-center gap-1.5" key={item}>
-          <span className={index === items.length - 1 ? "text-[var(--text-primary)]" : ""}>
-            {item}
-          </span>
+        <span className="flex items-center gap-1.5" key={item.label}>
+          {item.href ? (
+            <Link className="hover:text-[var(--primary)]" href={item.href}>
+              {item.label}
+            </Link>
+          ) : (
+            <span className={index === items.length - 1 ? "text-[var(--text-primary)]" : ""}>
+              {item.label}
+            </span>
+          )}
           {index < items.length - 1 ? <span>&gt;</span> : null}
         </span>
       ))}

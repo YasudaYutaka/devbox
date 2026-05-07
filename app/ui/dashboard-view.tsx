@@ -1,10 +1,28 @@
-import Link from "next/link";
-import { ArrowRight, Binary, Braces, KeyRound, Shield, Timer, Type } from "lucide-react";
-import { tools } from "./devbox-data";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
+import { tools, type Tool } from "./devbox-data";
 import { DevBoxShell } from "./shell";
+import { cx } from "./primitives";
 
 export function DashboardPage() {
-  const mainTools = tools;
+  const router = useRouter();
+  const [selected, setSelected] = useState<string | null>(null);
+  const [recentTools] = useState<Tool[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored: string[] = JSON.parse(
+        localStorage.getItem("devbox-recently-used") ?? "[]",
+      );
+      return stored
+        .map((slug) => tools.find((t) => t.slug === slug))
+        .filter((t): t is Tool => t !== undefined);
+    } catch {
+      return [];
+    }
+  });
 
   return (
     <DevBoxShell active="dashboard">
@@ -18,14 +36,20 @@ export function DashboardPage() {
           </div>
           <h2 className="text-base font-semibold">Tools</h2>
           <div className="grid gap-4 md:grid-cols-3">
-            {mainTools.map((tool) => {
+            {tools.map((tool) => {
               const Icon = tool.icon;
+              const isSelected = selected === tool.slug;
 
               return (
-                <Link
-                  className="group flex h-[164px] flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-5 transition-colors hover:border-[color-mix(in_srgb,var(--primary)_40%,var(--border))]"
-                  href={tool.href}
+                <div
+                  className={cx(
+                    "flex h-[164px] flex-col gap-3 rounded-lg border bg-[var(--bg-surface)] p-5 transition-colors",
+                    isSelected
+                      ? "border-[var(--primary)] shadow-[0_0_0_1px_var(--primary)]"
+                      : "border-[var(--border)] hover:border-[color-mix(in_srgb,var(--primary)_40%,var(--border))]",
+                  )}
                   key={tool.title}
+                  onClick={() => setSelected(isSelected ? null : tool.slug)}
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-active)] text-[var(--primary)]">
@@ -41,66 +65,46 @@ export function DashboardPage() {
                   <p className="min-h-8 text-[13px] leading-4 text-[var(--text-secondary)]">
                     {tool.description}
                   </p>
-                  <span className="mt-auto inline-flex h-8 w-fit items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3.5 text-xs font-medium text-white transition-colors group-hover:bg-[var(--primary-hover)] dark:border dark:border-[var(--border)] dark:bg-[#30363d] dark:text-[#e6edf3] dark:group-hover:bg-[var(--bg-hover)]">
+                  <button
+                    className="mt-auto inline-flex h-8 w-fit cursor-pointer items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3.5 text-xs font-medium text-white transition-colors hover:bg-[var(--primary-hover)] dark:border dark:border-[var(--border)] dark:bg-[#30363d] dark:text-[#e6edf3] dark:hover:bg-[var(--bg-hover)]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(tool.href);
+                    }}
+                    type="button"
+                  >
                     Open tool
                     <ArrowRight aria-hidden className="size-3.5" strokeWidth={2} />
-                  </span>
-                </Link>
+                  </button>
+                </div>
               );
             })}
           </div>
-          <DashboardPillSection title="Recently used" items={recentlyUsedItems} />
-          {/* <DashboardPillSection title="Coming soon" items={comingSoonItems} muted /> */}
+          {recentTools.length > 0 && <RecentlyUsedSection tools={recentTools} />}
         </div>
       </div>
     </DevBoxShell>
   );
 }
 
-const recentlyUsedItems = [
-  { label: "UUID Tools", icon: KeyRound },
-  { label: "JSON Formatter", icon: Braces },
-];
-
-const comingSoonItems = [
-  { label: "JWT Decoder", icon: Shield },
-  { label: "Base64", icon: Binary },
-  { label: "Timestamp", icon: Timer },
-  { label: "Text Extractor", icon: Type },
-];
-
-function DashboardPillSection({
-  title,
-  items,
-  muted = false,
-}: {
-  title: string;
-  items: Array<{ label: string; icon: typeof KeyRound }>;
-  muted?: boolean;
-}) {
+function RecentlyUsedSection({ tools: items }: { tools: Tool[] }) {
+  const router = useRouter();
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold">{title}</h2>
+      <h2 className="text-sm font-semibold">Recently used</h2>
       <div className="flex flex-wrap gap-3">
-        {items.map((item) => {
-          const Icon = item.icon;
-
+        {items.map((tool) => {
+          const Icon = tool.icon;
           return (
-          <div
-            className={
-              muted
-                ? "flex h-[34px] items-center gap-2 rounded-lg bg-[var(--badge-soon-bg)] px-3 text-xs text-[var(--badge-soon-text)] opacity-70"
-                : "flex h-10 items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-4 text-[13px] font-medium"
-            }
-            key={item.label}
-          >
-            <Icon
-              aria-hidden
-              className={muted ? "size-3.5" : "size-4 text-[var(--primary)]"}
-              strokeWidth={2}
-            />
-            {item.label}
-          </div>
+            <button
+              className="flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] px-4 text-[13px] font-medium transition-colors hover:bg-[var(--bg-hover)]"
+              key={tool.slug}
+              onClick={() => router.push(tool.href)}
+              type="button"
+            >
+              <Icon aria-hidden className="size-4 text-[var(--primary)]" strokeWidth={2} />
+              {tool.title}
+            </button>
           );
         })}
       </div>

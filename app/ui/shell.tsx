@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
-import { Box, Search, ShieldCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { Box, ChevronLeft, ChevronRight, Home, Search, ShieldCheck } from "lucide-react";
 import { activeBySlug, sectionOrder, tools, type ToolSlug } from "./devbox-data";
 import { cx } from "./primitives";
 import { ThemeToggle } from "./theme-toggle";
@@ -11,15 +15,30 @@ export function DevBoxShell({
   active: ToolSlug;
   children: React.ReactNode;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (active === "dashboard") return;
+    try {
+      const stored: string[] = JSON.parse(
+        localStorage.getItem("devbox-recently-used") ?? "[]",
+      );
+      const updated = [active, ...stored.filter((s) => s !== active)].slice(0, 2);
+      localStorage.setItem("devbox-recently-used", JSON.stringify(updated));
+    } catch {}
+  }, [active]);
+
   return (
     <div className="min-h-dvh bg-[var(--bg-page)] text-[var(--text-primary)]">
       <Header />
       <div className="flex min-h-[calc(100dvh-48px)]">
-        <Sidebar active={active} />
+        <Sidebar
+          active={active}
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((c) => !c)}
+        />
         <main className="min-w-0 flex-1 overflow-hidden bg-[var(--bg-page)] p-5 sm:p-7 lg:px-10">
-          <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5">
-            {children}
-          </div>
+          <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5">{children}</div>
         </main>
       </div>
     </div>
@@ -27,6 +46,40 @@ export function DevBoxShell({
 }
 
 function Header() {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filtered = query.trim()
+    ? tools.filter(
+        (t) =>
+          t.title.toLowerCase().includes(query.toLowerCase()) ||
+          t.subtype.toLowerCase().includes(query.toLowerCase()),
+      )
+    : [];
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setOpen(false);
+      setQuery("");
+    } else if (e.key === "Enter" && filtered.length > 0) {
+      router.push(filtered[0].href);
+      setOpen(false);
+      setQuery("");
+    }
+  }
+
   return (
     <header className="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-[var(--border)] bg-[var(--bg-header)] px-4">
       <Link href="/" className="flex items-center gap-2">
@@ -37,49 +90,137 @@ function Header() {
         Fast utilities for developers
       </span>
       <div className="flex-1" />
-      <div className="hidden h-8 w-[220px] items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-page)] px-2.5 text-xs text-[var(--text-muted)] md:flex">
-        <Search aria-hidden className="size-3.5" strokeWidth={2} />
-        <span>Search tools...</span>
+      <div className="relative hidden md:block" ref={containerRef}>
+        <div className="flex h-8 w-[220px] items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-page)] px-2.5">
+          <Search aria-hidden className="size-3.5 shrink-0 text-[var(--text-muted)]" strokeWidth={2} />
+          <input
+            aria-label="Search tools"
+            className="min-w-0 flex-1 bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={handleKeyDown}
+            placeholder="Search tools..."
+            value={query}
+          />
+        </div>
+        {open && filtered.length > 0 && (
+          <div className="absolute right-0 top-full mt-1 w-[220px] overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] shadow-lg">
+            {filtered.map((tool) => {
+              const Icon = tool.icon;
+              return (
+                <button
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-[var(--bg-hover)]"
+                  key={tool.slug}
+                  onClick={() => {
+                    router.push(tool.href);
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  type="button"
+                >
+                  <Icon
+                    aria-hidden
+                    className="size-4 shrink-0 text-[var(--primary)]"
+                    strokeWidth={2}
+                  />
+                  <span className="truncate">{tool.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       <span className="hidden h-6 items-center gap-1 rounded-full bg-[var(--success-bg)] px-2.5 text-[11px] font-medium text-[var(--success)] sm:flex">
         <ShieldCheck aria-hidden className="size-3" strokeWidth={2} />
         Local-first
       </span>
       <ThemeToggle />
-      <button className="flex size-8 items-center justify-center rounded-md text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">
-        <span className="sr-only">GitHub</span>
+      <a
+        aria-label="GitHub"
+        className="flex size-8 items-center justify-center rounded-md text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+        href="https://github.com/YasudaYutaka/devbox"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
         <GithubIcon aria-hidden className="size-4" />
-      </button>
+      </a>
     </header>
   );
 }
 
-function Sidebar({ active }: { active: ToolSlug }) {
+function Sidebar({
+  active,
+  collapsed,
+  onToggle,
+}: {
+  active: ToolSlug;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  const isHome = active === "dashboard";
+
   return (
-    <aside className="hidden w-60 shrink-0 overflow-y-auto border-r border-[var(--border)] bg-[var(--bg-sidebar)] px-4 py-0 lg:block">
+    <aside
+      className={cx(
+        "hidden shrink-0 overflow-y-auto border-r border-[var(--border)] bg-[var(--bg-sidebar)] lg:flex lg:flex-col",
+        collapsed ? "w-12 px-1.5" : "w-60 px-4",
+      )}
+    >
+      <div className={cx("flex flex-col gap-1 py-3", collapsed && "items-center")}>
+        <Link
+          className={cx(
+            "flex h-8 items-center gap-2 rounded-md transition-colors",
+            collapsed ? "w-8 justify-center" : "px-2 text-[13px]",
+            isHome
+              ? "bg-[var(--bg-active)] font-medium text-[var(--primary)]"
+              : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
+          )}
+          href="/"
+          title="Home"
+        >
+          <Home
+            aria-hidden
+            className={cx(
+              "size-4 shrink-0",
+              isHome ? "text-[var(--primary)]" : "text-[var(--text-secondary)]",
+            )}
+            strokeWidth={2}
+          />
+          {!collapsed && <span className="truncate">Home</span>}
+        </Link>
+      </div>
+
       {sectionOrder.map((section) => {
         const sectionTools = tools.filter((tool) => tool.section === section);
-        if (sectionTools.length === 0) {
-          return null;
-        }
+        if (sectionTools.length === 0) return null;
         return (
-          <div className="flex flex-col gap-1 py-3" key={section}>
-            <div className="px-2 py-0 text-[10px] font-semibold uppercase tracking-[1px] text-[var(--text-muted)]">
-              {section}
-            </div>
+          <div
+            className={cx("flex flex-col gap-1 py-3", collapsed && "items-center")}
+            key={section}
+          >
+            {!collapsed && (
+              <div className="px-2 py-0 text-[10px] font-semibold uppercase tracking-[1px] text-[var(--text-muted)]">
+                {section}
+              </div>
+            )}
             {sectionTools.map((tool) => {
               const isActive = activeBySlug[active] === tool.title;
               const Icon = tool.icon;
               return (
                 <Link
                   className={cx(
-                    "flex h-8 items-center gap-2 rounded-md px-2 text-[13px] transition-colors",
+                    "flex h-8 items-center gap-2 rounded-md transition-colors",
+                    collapsed ? "w-8 justify-center" : "px-2 text-[13px]",
                     isActive
                       ? "bg-[var(--bg-active)] font-medium text-[var(--primary)]"
                       : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
                   )}
                   href={tool.href}
                   key={`${section}-${tool.title}`}
+                  title={collapsed ? tool.title : undefined}
                 >
                   <Icon
                     aria-hidden
@@ -89,13 +230,30 @@ function Sidebar({ active }: { active: ToolSlug }) {
                     )}
                     strokeWidth={2}
                   />
-                  <span className="truncate">{tool.title}</span>
+                  {!collapsed && <span className="truncate">{tool.title}</span>}
                 </Link>
               );
             })}
           </div>
         );
       })}
+
+      <div className="flex-1" />
+
+      <div className={cx("flex py-3", collapsed ? "justify-center" : "justify-end px-2")}>
+        <button
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="flex size-7 items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[var(--bg-hover)]"
+          onClick={onToggle}
+          type="button"
+        >
+          {collapsed ? (
+            <ChevronRight aria-hidden className="size-4" strokeWidth={2} />
+          ) : (
+            <ChevronLeft aria-hidden className="size-4" strokeWidth={2} />
+          )}
+        </button>
+      </div>
     </aside>
   );
 }

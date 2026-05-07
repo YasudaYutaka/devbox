@@ -165,7 +165,7 @@ export function UuidToolsPage() {
 
   return (
     <DevBoxShell active="uuid-tools">
-      <Breadcrumbs items={["DevBox", "Generators", "UUID Tools"]} />
+      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: "Generators" }, { label: "UUID Tools" }]} />
       <PageTitle title="UUID Tools" subtitle="Generate and transform UUIDs quickly." />
 
       <Card>

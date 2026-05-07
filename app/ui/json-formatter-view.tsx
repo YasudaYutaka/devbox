@@ -19,7 +19,7 @@ const sampleJson = `{
 export function JsonFormatterPage() {
   return (
     <DevBoxShell active="json-formatter">
-      <Breadcrumbs items={["DevBox", "Formatters & Validators", "JSON Formatter"]} />
+      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: "Formatters & Validators" }, { label: "JSON Formatter" }]} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2.5">

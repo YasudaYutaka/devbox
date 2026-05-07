@@ -11,7 +11,7 @@ const metrics = [
 export function CharacterCounterPage() {
   return (
     <DevBoxShell active="character-counter">
-      <Breadcrumbs items={["DevBox", "Text Tools", "Character / Word Counter"]} />
+      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: "Text Tools" }, { label: "Character / Word Counter" }]} />
       <PageTitle
         title="Character / Word Counter"
         subtitle="Count characters, words, and lines instantly."

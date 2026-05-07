@@ -13,7 +13,7 @@ import { DevBoxShell } from "./shell";
 export function TextDiffPage() {
   return (
     <DevBoxShell active="text-diff">
-      <Breadcrumbs items={["DevBox", "Comparators", "Text Diff"]} />
+      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: "Comparators" }, { label: "Text Diff" }]} />
       <PageTitle
         title="Text Diff"
         subtitle="Compare two texts and instantly spot only the differences."
