@@ -22,10 +22,8 @@ const MAX_OCR_SIDE = 1800;
 const MIN_TEXT_SIDE = 900;
 const OCR_LANGUAGE: Language = "por+eng";
 const OCR_PSM: SegmentationMode = "6";
-const OCR_FORMAT: ExtractionFormat = "free";
-const SHOULD_AUTO_CROP = true;
-const SHOULD_BINARIZE = true;
-const OCR_ROTATION = 0;
+const UUID_WHITELIST = "0123456789abcdefABCDEF-";
+const UUID_REGEX = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
 
 type TesseractProgress = {
   status?: string;
@@ -84,6 +82,7 @@ type QualityReport = {
 
 type ProcessedImage = {
   dataUrl: string;
+  binarizedDataUrl: string;
   previewUrl: string;
   quality: QualityReport;
   sizeLabel: string;
@@ -108,7 +107,7 @@ const formatOptions: Array<{
   {
     value: "uuid",
     label: "UUID",
-    whitelist: "0123456789abcdefABCDEF-",
+    whitelist: UUID_WHITELIST,
     pattern: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   },
   {
@@ -147,6 +146,7 @@ export function TextExtractorPage() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [format, setFormat] = useState<ExtractionFormat>("free");
 
   async function handleFile(file: File) {
     setError("");
@@ -165,11 +165,7 @@ export function TextExtractorPage() {
 
     try {
       const image = await loadImage(file);
-      const next = preprocessImage(image, {
-        autoCrop: SHOULD_AUTO_CROP,
-        binarize: SHOULD_BINARIZE,
-        rotation: OCR_ROTATION,
-      });
+      const next = preprocessImage(image);
       setFileName(file.name);
       setProcessed(next);
       if (next.quality.warnings.length > 0) {
@@ -197,7 +193,7 @@ export function TextExtractorPage() {
 
     try {
       const Tesseract = await loadTesseract();
-      const selectedFormat = formatOptions.find((item) => item.value === OCR_FORMAT);
+      const selectedFormat = formatOptions.find((item) => item.value === format);
       const parameters: Record<string, string> = {
         tessedit_pageseg_mode: OCR_PSM,
         tessedit_ocr_engine_mode: "1",
@@ -220,13 +216,28 @@ export function TextExtractorPage() {
           await worker.setParameters(parameters);
         }
         const response = await worker.recognize(processed.dataUrl);
-        setResult(buildResult(response.data, OCR_FORMAT));
+        let nextResult = buildResult(response.data, format);
+        if (format === "uuid" && !nextResult.raw) {
+          setStatus("No UUID found. Trying high-contrast fallback...");
+          const fallbackResponse = await worker.recognize(processed.binarizedDataUrl);
+          nextResult = buildResult(fallbackResponse.data, format);
+        }
+        setResult(nextResult);
       } else if (Tesseract.recognize) {
         const response = await Tesseract.recognize(processed.dataUrl, OCR_LANGUAGE, {
           logger,
           ...parameters,
         });
-        setResult(buildResult(response.data, OCR_FORMAT));
+        let nextResult = buildResult(response.data, format);
+        if (format === "uuid" && !nextResult.raw) {
+          setStatus("No UUID found. Trying high-contrast fallback...");
+          const fallbackResponse = await Tesseract.recognize(processed.binarizedDataUrl, OCR_LANGUAGE, {
+            logger,
+            ...parameters,
+          });
+          nextResult = buildResult(fallbackResponse.data, format);
+        }
+        setResult(nextResult);
       } else {
         throw new Error("Missing Tesseract API");
       }
@@ -370,14 +381,35 @@ export function TextExtractorPage() {
                 result={result}
                 status={status}
               />
-              <Button disabled={isProcessing || !processed} onClick={() => void runOcr()}>
-                {isProcessing ? (
-                  <Loader2 aria-hidden className="size-3.5 animate-spin" strokeWidth={2} />
-                ) : (
-                  <ScanText aria-hidden className="size-3.5" strokeWidth={2} />
-                )}
-                Extract text
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+                  Text type
+                  <select
+                    className="h-9 rounded-md border border-[var(--border)] bg-white px-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--bg-hover)] focus:border-[var(--primary)] dark:bg-[#1b1f23]"
+                    disabled={isProcessing}
+                    onChange={(event) => {
+                      setFormat(event.target.value as ExtractionFormat);
+                      setResult(null);
+                      setStatus("Text type updated. Run OCR to apply it.");
+                    }}
+                    value={format}
+                  >
+                    {formatOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Button disabled={isProcessing || !processed} onClick={() => void runOcr()}>
+                  {isProcessing ? (
+                    <Loader2 aria-hidden className="size-3.5 animate-spin" strokeWidth={2} />
+                  ) : (
+                    <ScanText aria-hidden className="size-3.5" strokeWidth={2} />
+                  )}
+                  Extract text
+                </Button>
+              </div>
             </div>
           </section>
 
@@ -398,7 +430,7 @@ export function TextExtractorPage() {
 
             <div className="flex min-h-[300px] flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-hover)] p-4">
               <textarea
-                aria-label="Raw OCR output"
+                aria-label="OCR output"
                 className="min-h-[150px] flex-1 resize-none bg-transparent font-mono text-sm leading-[1.6] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
                 placeholder="Extracted text will appear here after an image is processed."
                 readOnly
@@ -604,25 +636,16 @@ function loadImage(file: File) {
   });
 }
 
-function preprocessImage(
-  image: HTMLImageElement,
-  options: { autoCrop: boolean; binarize: boolean; rotation: number },
-): ProcessedImage {
-  const rotated = drawRotated(image, options.rotation);
-  const sourceContext = rotated.getContext("2d", { willReadFrequently: true });
-  if (!sourceContext) throw new Error("Canvas unavailable");
-
-  const sourceData = sourceContext.getImageData(0, 0, rotated.width, rotated.height);
-  const crop = options.autoCrop ? detectTextBounds(sourceData) : null;
-  const cropWidth = crop ? crop.width : rotated.width;
-  const cropHeight = crop ? crop.height : rotated.height;
-  const longest = Math.max(cropWidth, cropHeight);
-  const shortest = Math.min(cropWidth, cropHeight);
+function preprocessImage(image: HTMLImageElement): ProcessedImage {
+  const sourceWidth = image.naturalWidth;
+  const sourceHeight = image.naturalHeight;
+  const longest = Math.max(sourceWidth, sourceHeight);
+  const shortest = Math.min(sourceWidth, sourceHeight);
   const maxScale = longest > MAX_OCR_SIDE ? MAX_OCR_SIDE / longest : 1;
   const minScale = shortest < MIN_TEXT_SIDE ? Math.min(2.25, MIN_TEXT_SIDE / Math.max(1, shortest)) : 1;
   const scale = Math.min(maxScale, minScale);
-  const outputWidth = Math.max(1, Math.round(cropWidth * scale));
-  const outputHeight = Math.max(1, Math.round(cropHeight * scale));
+  const outputWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const outputHeight = Math.max(1, Math.round(sourceHeight * scale));
 
   const canvas = document.createElement("canvas");
   canvas.width = outputWidth;
@@ -632,78 +655,32 @@ function preprocessImage(
 
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
-  context.drawImage(
-    rotated,
-    crop?.x ?? 0,
-    crop?.y ?? 0,
-    cropWidth,
-    cropHeight,
-    0,
-    0,
-    outputWidth,
-    outputHeight,
-  );
+  context.drawImage(image, 0, 0, outputWidth, outputHeight);
 
-  const imageData = context.getImageData(0, 0, outputWidth, outputHeight);
-  const quality = analyzeQuality(imageData, outputWidth, outputHeight);
-  enhanceImageData(imageData, options.binarize);
-  context.putImageData(imageData, 0, 0);
+  const sourceData = context.getImageData(0, 0, outputWidth, outputHeight);
+  const quality = analyzeQuality(sourceData, outputWidth, outputHeight);
+
+  const mainData = cloneImageData(sourceData);
+  enhanceImageData(mainData, false);
+  context.putImageData(mainData, 0, 0);
+  const dataUrl = canvas.toDataURL("image/png");
+
+  const binarizedData = cloneImageData(sourceData);
+  enhanceImageData(binarizedData, true);
+  context.putImageData(binarizedData, 0, 0);
+  const binarizedDataUrl = canvas.toDataURL("image/png");
 
   return {
-    dataUrl: canvas.toDataURL("image/png"),
-    previewUrl: canvas.toDataURL("image/png"),
+    dataUrl,
+    binarizedDataUrl,
+    previewUrl: dataUrl,
     quality,
     sizeLabel: `${outputWidth} x ${outputHeight}px`,
   };
 }
 
-function drawRotated(image: HTMLImageElement, rotation: number) {
-  const normalized = ((rotation % 360) + 360) % 360;
-  const swap = normalized === 90 || normalized === 270;
-  const canvas = document.createElement("canvas");
-  canvas.width = swap ? image.naturalHeight : image.naturalWidth;
-  canvas.height = swap ? image.naturalWidth : image.naturalHeight;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas unavailable");
-
-  context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate((normalized * Math.PI) / 180);
-  context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
-  return canvas;
-}
-
-function detectTextBounds(imageData: ImageData) {
-  const { data, width, height } = imageData;
-  let minX = width;
-  let minY = height;
-  let maxX = 0;
-  let maxY = 0;
-  let hits = 0;
-
-  for (let y = 0; y < height; y += 2) {
-    for (let x = 0; x < width; x += 2) {
-      const index = (y * width + x) * 4;
-      const luminance = getLuminance(data[index], data[index + 1], data[index + 2]);
-      if (luminance < 235) {
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-        hits++;
-      }
-    }
-  }
-
-  if (hits < 40) return null;
-
-  const pad = 18;
-  const x = Math.max(0, minX - pad);
-  const y = Math.max(0, minY - pad);
-  const right = Math.min(width, maxX + pad);
-  const bottom = Math.min(height, maxY + pad);
-
-  if (right - x < width * 0.08 || bottom - y < height * 0.08) return null;
-  return { x, y, width: right - x, height: bottom - y };
+function cloneImageData(imageData: ImageData) {
+  return new ImageData(new Uint8ClampedArray(imageData.data), imageData.width, imageData.height);
 }
 
 function enhanceImageData(imageData: ImageData, binarize: boolean) {
@@ -718,7 +695,7 @@ function enhanceImageData(imageData: ImageData, binarize: boolean) {
   }
 
   const mean = sum / Math.max(1, count);
-  const contrast = 1.35;
+  const contrast = 1.15;
 
   for (let i = 0; i < data.length; i += 4) {
     const gray = getLuminance(data[i], data[i + 1], data[i + 2]);
@@ -811,6 +788,7 @@ function laplacianVariance(gray: Uint8ClampedArray, width: number, height: numbe
 function buildResult(data: OcrData, format: ExtractionFormat): OcrResult {
   const raw = (data.text ?? "").trim();
   const cleaned = cleanText(raw, format);
+  const output = format === "uuid" ? extractUuids(cleaned).join("\n") : cleaned;
   const wordConfidences =
     data.words
       ?.map((word) => word.confidence)
@@ -821,14 +799,14 @@ function buildResult(data: OcrData, format: ExtractionFormat): OcrResult {
       : average(wordConfidences);
   const selectedFormat = formatOptions.find((item) => item.value === format);
   const confidenceLabel = confidence >= 85 ? "High" : confidence >= 65 ? "Medium" : "Low";
-  const validationMessage = validateCleanedText(cleaned, selectedFormat);
+  const validationMessage = validateCleanedText(output, selectedFormat);
 
   return {
-    raw,
+    raw: output,
     confidence,
     confidenceLabel,
     validationMessage,
-    words: raw.trim() ? raw.trim().split(/\s+/).length : 0,
+    words: output ? output.split(/\s+/).length : 0,
   };
 }
 
@@ -852,7 +830,12 @@ function cleanText(raw: string, format: ExtractionFormat) {
   }
 
   if (format === "uuid") {
-    text = text.replace(/[Oo]/g, "0").replace(/\s+/g, "").toLowerCase();
+    text = text
+      .replace(/[‐‑‒–—―−]/g, "-")
+      .replace(/[Oo]/g, "0")
+      .replace(/\s*-\s*/g, "-")
+      .replace(/\s+/g, "")
+      .toLowerCase();
   }
 
   if (format === "email") {
@@ -862,11 +845,27 @@ function cleanText(raw: string, format: ExtractionFormat) {
   return text;
 }
 
+function extractUuids(text: string) {
+  const seen = new Set<string>();
+  UUID_REGEX.lastIndex = 0;
+  const matches = text.matchAll(UUID_REGEX);
+
+  for (const match of matches) {
+    seen.add(match[0].toLowerCase());
+  }
+
+  return Array.from(seen);
+}
+
 function validateCleanedText(
   cleaned: string,
   selectedFormat: (typeof formatOptions)[number] | undefined,
 ) {
   if (!cleaned) return "No text found";
+  if (selectedFormat?.value === "uuid") {
+    const count = cleaned.split(/\s+/).filter(Boolean).length;
+    return count === 1 ? "1 UUID found" : `${count} UUIDs found`;
+  }
   if (!selectedFormat?.pattern) return "Ready to review";
   return selectedFormat.pattern.test(cleaned) ? "Format validated" : "Format needs review";
 }
