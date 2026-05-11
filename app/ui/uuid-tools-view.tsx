@@ -7,6 +7,7 @@ import {
   Check,
   Copy,
   Download,
+  Info,
   Layers,
   Minus,
   Play,
@@ -19,8 +20,9 @@ import {
 import { Badge, Breadcrumbs, Button, Card, PageTitle, cx } from "./primitives";
 import { DevBoxShell } from "./shell";
 
-const defaultQuantity = 10;
-const maxBatchQuantity = 1000;
+const defaultQuantity = 100;
+const softBatchQuantity = 1000;
+const maxBatchQuantity = 10000;
 const uuidHexPattern = /^[0-9a-fA-F]{32}$/;
 const uuidV4Pattern =
   /^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?4[0-9a-fA-F]{3}-?[89abAB][0-9a-fA-F]{3}-?[0-9a-fA-F]{12}$/;
@@ -38,6 +40,8 @@ export function UuidToolsPage() {
   const [batchNotice, setBatchNotice] = useState<Notice>(null);
   const [batchError, setBatchError] = useState("");
   const [copiedBatchIndex, setCopiedBatchIndex] = useState<number | null>(null);
+  const [pendingBatchQuantity, setPendingBatchQuantity] = useState<number | null>(null);
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false);
 
   const quantityStatus = useMemo(() => parseQuantity(quantity), [quantity]);
   const quickStatus = getUuidStatus(uuidValue);
@@ -87,18 +91,49 @@ export function UuidToolsPage() {
     if (!count.valid) {
       setBatchError(count.message);
       setBatchNotice(null);
+      setPendingBatchQuantity(null);
       return;
     }
 
-    setQuantity(String(count.value));
+    if (count.value > softBatchQuantity) {
+      setPendingBatchQuantity(count.value);
+      return;
+    }
+
+    void generateBatch(count.value);
+  }
+
+  function handleConfirmLargeBatch() {
+    if (pendingBatchQuantity === null) {
+      return;
+    }
+
+    void generateBatch(pendingBatchQuantity);
+    setPendingBatchQuantity(null);
+  }
+
+  function handleCancelLargeBatch() {
+    setPendingBatchQuantity(null);
+  }
+
+  async function generateBatch(count: number) {
+    setIsBatchGenerating(true);
+    setQuantity(String(count));
     setBatchError("");
-    setBatchUuids(
-      Array.from({ length: count.value }, () =>
-        formatBatchUuid(generateUuid(), batchUppercase, batchRemoveHyphens),
-      ),
-    );
     setBatchNotice(null);
     setCopiedBatchIndex(null);
+
+    await waitForNextFrame();
+
+    try {
+      setBatchUuids(
+        Array.from({ length: count }, () =>
+          formatBatchUuid(generateUuid(), batchUppercase, batchRemoveHyphens),
+        ),
+      );
+    } finally {
+      setIsBatchGenerating(false);
+    }
   }
 
   async function handleCopyBatch() {
@@ -250,15 +285,15 @@ export function UuidToolsPage() {
           title="Batch UUID Generator"
           aside={
             <div className="flex flex-wrap justify-end gap-1.5">
-              <Button disabled={!hasBatchResults} onClick={handleCopyBatch} variant="outline">
+              <Button disabled={!hasBatchResults || isBatchGenerating} onClick={handleCopyBatch} variant="outline">
                 <Copy aria-hidden className="size-3" strokeWidth={2} />
                 Copy
               </Button>
-              <Button disabled={!hasBatchResults} onClick={handleDownloadCsv} variant="outline">
+              <Button disabled={!hasBatchResults || isBatchGenerating} onClick={handleDownloadCsv} variant="outline">
                 <Download aria-hidden className="size-3" strokeWidth={2} />
                 CSV
               </Button>
-              <Button disabled={!hasBatchResults} onClick={handleClearBatch} variant="ghost">
+              <Button disabled={!hasBatchResults || isBatchGenerating} onClick={handleClearBatch} variant="ghost">
                 <Trash2 aria-hidden className="size-3" strokeWidth={2} />
                 Clear
               </Button>
@@ -282,9 +317,13 @@ export function UuidToolsPage() {
                 type="number"
                 value={quantity}
               />
-              <Button onClick={handleGenerateBatch}>
-                <Play aria-hidden className="size-3.5 fill-current" strokeWidth={2} />
-                Generate
+              <Button disabled={isBatchGenerating} onClick={handleGenerateBatch}>
+                <Play
+                  aria-hidden
+                  className={cx("size-3.5 fill-current", isBatchGenerating && "animate-spin")}
+                  strokeWidth={2}
+                />
+                {isBatchGenerating ? "Generating" : "Generate"}
               </Button>
             </div>
 
@@ -304,8 +343,18 @@ export function UuidToolsPage() {
               <h3 className="text-xs font-semibold text-[var(--text-primary)]">
                 Limit: {maxBatchQuantity.toLocaleString()} UUIDs
               </h3>
-              <p className="text-[11px] leading-[1.45] text-[var(--text-secondary)]">
-                {batchError || quantityStatus.message || "Results appear as soon as a batch is generated."}
+              <p
+                aria-live="polite"
+                className={cx(
+                  "text-[11px] leading-[1.45]",
+                  batchError ? "font-medium text-[var(--error)]" : "text-[var(--text-secondary)]",
+                )}
+              >
+                {batchError ||
+                  quantityStatus.message ||
+                  (quantityStatus.valid && quantityStatus.value > softBatchQuantity
+                    ? `Large batch: confirmation starts above ${softBatchQuantity.toLocaleString()} UUIDs.`
+                    : "Results appear as soon as a batch is generated.")}
               </p>
             </div>
           </div>
@@ -317,7 +366,14 @@ export function UuidToolsPage() {
               {batchNotice === "csv" ? <StatusPill icon={Download}>CSV ready</StatusPill> : null}
             </div>
             <div className="flex max-h-[430px] min-h-[230px] min-w-0 flex-col gap-1.5 overflow-auto rounded-lg border border-[var(--border)] bg-[var(--bg-page)] p-2">
-              {hasBatchResults ? (
+              {isBatchGenerating ? (
+                <div className="flex min-h-[210px] flex-col items-center justify-center gap-3 rounded-md bg-[var(--bg-surface)] p-6 text-center text-xs text-[var(--text-secondary)]">
+                  <span className="flex size-9 items-center justify-center rounded-md bg-[var(--bg-active)] text-[var(--primary)]">
+                    <Play aria-hidden className="size-4 animate-spin fill-current" strokeWidth={2} />
+                  </span>
+                  <span>Generating UUID batch...</span>
+                </div>
+              ) : hasBatchResults ? (
                 batchUuids.map((uuid, index) => (
                   <div
                     className="flex h-[34px] min-w-0 shrink-0 items-center justify-between gap-3 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3"
@@ -350,6 +406,14 @@ export function UuidToolsPage() {
           </div>
         </div>
       </Card>
+
+      {pendingBatchQuantity !== null ? (
+        <LargeBatchDialog
+          quantity={pendingBatchQuantity}
+          onCancel={handleCancelLargeBatch}
+          onConfirm={handleConfirmLargeBatch}
+        />
+      ) : null}
     </DevBoxShell>
   );
 }
@@ -407,7 +471,7 @@ function parseQuantity(value: string):
   const normalized = value.trim();
 
   if (!/^\d+$/.test(normalized)) {
-    return { valid: false, value: null, message: "Enter a quantity between 1 and 1,000." };
+    return { valid: false, value: null, message: "Enter a quantity between 1 and 10,000." };
   }
 
   const parsed = Number.parseInt(normalized, 10);
@@ -417,7 +481,11 @@ function parseQuantity(value: string):
   }
 
   if (parsed > maxBatchQuantity) {
-    return { valid: false, value: null, message: "Quantity cannot exceed 1,000 UUIDs." };
+    return {
+      valid: false,
+      value: null,
+      message: `Enter ${maxBatchQuantity.toLocaleString()} UUIDs or fewer.`,
+    };
   }
 
   return { valid: true, value: parsed, message: "" };
@@ -434,6 +502,12 @@ async function copyText(value: string) {
   } catch {
     return false;
   }
+}
+
+function waitForNextFrame() {
+  return new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
 }
 
 function escapeCsvValue(value: string) {
@@ -507,5 +581,49 @@ function StatusPill({
       <Icon aria-hidden className="size-3" strokeWidth={2} />
       {children}
     </span>
+  );
+}
+
+function LargeBatchDialog({
+  quantity,
+  onCancel,
+  onConfirm,
+}: {
+  quantity: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      aria-labelledby="large-batch-title"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+      role="dialog"
+    >
+      <div className="w-full max-w-[420px] rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] shadow-[0_18px_60px_rgba(0,0,0,0.24)]">
+        <div className="flex items-start gap-3 border-b border-[var(--border)] p-5">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[var(--warning-bg)] text-[var(--warning)]">
+            <Info aria-hidden className="size-4" strokeWidth={2} />
+          </span>
+          <div className="min-w-0">
+            <h2 id="large-batch-title" className="text-[15px] font-semibold text-[var(--text-primary)]">
+              Generate large UUID batch?
+            </h2>
+            <p className="mt-1 text-[13px] leading-5 text-[var(--text-secondary)]">
+              You are about to generate {quantity.toLocaleString()} UUIDs. Large batches can take a moment to render and copy.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end">
+          <Button className="w-full sm:w-auto" onClick={onCancel} variant="outline">
+            Cancel
+          </Button>
+          <Button className="w-full sm:w-auto" onClick={onConfirm}>
+            <Play aria-hidden className="size-3.5 fill-current" strokeWidth={2} />
+            Generate
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

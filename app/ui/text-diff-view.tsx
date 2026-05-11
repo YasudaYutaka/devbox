@@ -16,6 +16,9 @@ import { DevBoxShell } from "./shell";
 
 type Segment = { type: "equal" | "added" | "removed"; text: string };
 
+const diffSoftLimitBytes = 500 * 1024;
+const diffHardLimitBytes = 1024 * 1024;
+
 export function TextDiffPage() {
   const [text1, setText1] = useState("");
   const [text2, setText2] = useState("");
@@ -26,9 +29,12 @@ export function TextDiffPage() {
   const [result, setResult] = useState<Segment[] | null>(null);
   const [tooLong, setTooLong] = useState(false);
   const [copied, setCopied] = useState(false);
+  const text1Size = getTextSize(text1);
+  const text2Size = getTextSize(text2);
+  const isOverSoftLimit = text1Size > diffSoftLimitBytes || text2Size > diffSoftLimitBytes;
 
   function runDiff(a: string, b: string) {
-    if (a.length > 5000 || b.length > 5000) {
+    if (getTextSize(a) > diffHardLimitBytes || getTextSize(b) > diffHardLimitBytes) {
       setTooLong(true);
       setResult(null);
       return;
@@ -52,6 +58,10 @@ export function TextDiffPage() {
   }
 
   function handleCompare() {
+    if (isOverSoftLimit && !window.confirm("This is a large diff and may be slower to render. Continue?")) {
+      return;
+    }
+
     runDiff(text1, text2);
   }
 
@@ -192,7 +202,16 @@ export function TextDiffPage() {
           {tooLong && (
             <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--error-bg)] px-3 py-2 text-xs text-[var(--error)]">
               <Info aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
-              <span>Input too long — each field is limited to 5,000 characters.</span>
+              <span>Input too large - each field is limited to {formatBytes(diffHardLimitBytes)}.</span>
+            </div>
+          )}
+
+          {isOverSoftLimit && !tooLong && (
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--warning-bg)] px-3 py-2 text-xs text-[var(--warning)]">
+              <Info aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
+              <span>
+                Large input: text 1 is {formatBytes(text1Size)}, text 2 is {formatBytes(text2Size)}. Compare will ask for confirmation above {formatBytes(diffSoftLimitBytes)}.
+              </span>
             </div>
           )}
 
@@ -417,6 +436,18 @@ function renderSegs(segs: Segment[], side: "left" | "right"): React.ReactNode[] 
   return nodes;
 }
 
+
+function getTextSize(value: string) {
+  return new Blob([value]).size;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) {
+    return `${Math.ceil(bytes / 1024).toLocaleString()} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(bytes % (1024 * 1024) === 0 ? 0 : 1)} MB`;
+}
 
 function segmentsToPlainText(segs: Segment[]): string {
   return segs

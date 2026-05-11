@@ -5,19 +5,8 @@ import { CheckCircle2, Copy, FileJson2, Minimize2 } from "lucide-react";
 import { Breadcrumbs, Card, cx } from "./primitives";
 import { DevBoxShell } from "./shell";
 
-const sampleJson = `{
-  "name": "DevBox",
-  "version": "1.0.0",
-  "tools": [
-    "uuid",
-    "json",
-    "diff"
-  ],
-  "config": {
-    "theme": "dark",
-    "privacy": true
-  }
-}`;
+const jsonSoftLimitBytes = 500 * 1024;
+const jsonHardLimitBytes = 2 * 1024 * 1024;
 
 function formatJson(input: string): { ok: true; result: string } | { ok: false; error: string } {
   try {
@@ -50,8 +39,14 @@ export function JsonFormatterPage() {
   const [status, setStatus] = useState<"valid" | "invalid" | "idle">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [notice, setNotice] = useState("");
+  const inputSize = getTextSize(inputJson);
+  const isOverSoftLimit = inputSize > jsonSoftLimitBytes;
 
   function handleFormat() {
+    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson)) {
+      return;
+    }
+
     const r = formatJson(inputJson);
     if (r.ok) {
       setOutputJson(r.result);
@@ -65,6 +60,10 @@ export function JsonFormatterPage() {
   }
 
   function handleMinify() {
+    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson)) {
+      return;
+    }
+
     const r = minifyJson(inputJson);
     if (r.ok) {
       setOutputJson(r.result);
@@ -78,6 +77,10 @@ export function JsonFormatterPage() {
   }
 
   function handleValidate() {
+    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson)) {
+      return;
+    }
+
     const r = validateJson(inputJson);
     setStatus(r.valid ? "valid" : "invalid");
     setErrorMsg(r.error);
@@ -129,6 +132,11 @@ export function JsonFormatterPage() {
         <InputPanel title="Input JSON" value={inputJson} onChange={setInputJson} />
         <OutputPanel title="Output JSON" value={outputJson} notice={notice} onCopy={handleCopy} />
       </div>
+      {isOverSoftLimit && status !== "invalid" && (
+        <p className="text-[12px] font-medium text-[var(--warning)]">
+          Large input: {formatBytes(inputSize)}. JSON formatting is limited to {formatBytes(jsonHardLimitBytes)}.
+        </p>
+      )}
       {status === "invalid" && errorMsg && (
         <p className="text-[12px] font-mono text-[var(--error)]">{errorMsg}</p>
       )}
@@ -184,6 +192,34 @@ function OutputPanel({
       </pre>
     </Card>
   );
+}
+
+function checkJsonSize(
+  size: number,
+  setStatus: (value: "valid" | "invalid" | "idle") => void,
+  setErrorMsg: (value: string) => void,
+  setOutputJson: (value: string) => void,
+) {
+  if (size <= jsonHardLimitBytes) {
+    return true;
+  }
+
+  setStatus("invalid");
+  setErrorMsg(`Input is ${formatBytes(size)}. JSON formatting is limited to ${formatBytes(jsonHardLimitBytes)}.`);
+  setOutputJson("");
+  return false;
+}
+
+function getTextSize(value: string) {
+  return new Blob([value]).size;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) {
+    return `${Math.ceil(bytes / 1024).toLocaleString()} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(bytes % (1024 * 1024) === 0 ? 0 : 1)} MB`;
 }
 
 function JsonActionButton({
