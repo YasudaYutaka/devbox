@@ -23,24 +23,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const themeScript = `
-try {
-  var savedTheme = window.localStorage.getItem("devbox-theme");
-  var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  var theme = savedTheme === "light" || savedTheme === "dark" ? savedTheme : prefersDark ? "dark" : "light";
-  document.documentElement.classList.toggle("dark", theme === "dark");
-} catch (_) {}
-`;
-
   return (
     <html
       lang="en"
       className={`${inter.variable} ${jetBrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <LanguageProvider>{children}</LanguageProvider>
       </body>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { tools, type Tool } from "./devbox-data";
@@ -14,19 +14,11 @@ export function DashboardPage() {
   const { locale } = useLanguage();
   const text = getLabels(locale);
   const [selected, setSelected] = useState<string | null>(null);
-  const [recentTools] = useState<Tool[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const stored: string[] = JSON.parse(
-        localStorage.getItem("devbox-recently-used") ?? "[]",
-      );
-      return stored
-        .map((slug) => tools.find((t) => t.slug === slug))
-        .filter((t): t is Tool => t !== undefined);
-    } catch {
-      return [];
-    }
-  });
+  const recentTools = useSyncExternalStore(
+    subscribeToRecentlyUsed,
+    getRecentlyUsedTools,
+    getServerRecentlyUsedTools,
+  );
 
   return (
     <DevBoxShell active="dashboard">
@@ -90,6 +82,28 @@ export function DashboardPage() {
       </div>
     </DevBoxShell>
   );
+}
+
+function getRecentlyUsedTools() {
+  try {
+    const stored: string[] = JSON.parse(
+      localStorage.getItem("devbox-recently-used") ?? "[]",
+    );
+    return stored
+      .map((slug) => tools.find((tool) => tool.slug === slug))
+      .filter((tool): tool is Tool => tool !== undefined);
+  } catch {
+    return [];
+  }
+}
+
+function getServerRecentlyUsedTools() {
+  return [];
+}
+
+function subscribeToRecentlyUsed(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
 }
 
 function RecentlyUsedSection({ tools: items }: { tools: Tool[] }) {

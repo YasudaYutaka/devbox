@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
 
@@ -29,6 +29,10 @@ function applyTheme(theme: Theme) {
 export function ThemeToggle() {
   const theme = useSyncExternalStore(subscribeToTheme, getPreferredTheme, getServerTheme);
   const isDark = theme === "dark";
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   function toggleTheme() {
     const nextTheme = isDark ? "light" : "dark";
