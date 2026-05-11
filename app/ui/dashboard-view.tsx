@@ -9,6 +9,10 @@ import { useLanguage } from "./language";
 import { cx } from "./primitives";
 import { getLabels } from "./translations";
 
+const emptyRecentTools: Tool[] = [];
+let cachedRecentlyUsedRaw = "";
+let cachedRecentlyUsedTools: Tool[] = emptyRecentTools;
+
 export function DashboardPage() {
   const router = useRouter();
   const { locale } = useLanguage();
@@ -86,19 +90,28 @@ export function DashboardPage() {
 
 function getRecentlyUsedTools() {
   try {
-    const stored: string[] = JSON.parse(
-      localStorage.getItem("devbox-recently-used") ?? "[]",
-    );
-    return stored
+    const raw = localStorage.getItem("devbox-recently-used") ?? "[]";
+
+    if (raw === cachedRecentlyUsedRaw) {
+      return cachedRecentlyUsedTools;
+    }
+
+    const stored: string[] = JSON.parse(raw);
+    cachedRecentlyUsedRaw = raw;
+    cachedRecentlyUsedTools = stored
       .map((slug) => tools.find((tool) => tool.slug === slug))
       .filter((tool): tool is Tool => tool !== undefined);
+
+    return cachedRecentlyUsedTools;
   } catch {
-    return [];
+    cachedRecentlyUsedRaw = "";
+    cachedRecentlyUsedTools = emptyRecentTools;
+    return cachedRecentlyUsedTools;
   }
 }
 
 function getServerRecentlyUsedTools() {
-  return [];
+  return emptyRecentTools;
 }
 
 function subscribeToRecentlyUsed(onStoreChange: () => void) {
