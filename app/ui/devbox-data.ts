@@ -9,8 +9,10 @@ export type ToolSlug =
   | "text-extractor"
   | "character-counter";
 
+export type UtilityToolSlug = Exclude<ToolSlug, "dashboard">;
+
 export type Tool = {
-  slug: ToolSlug;
+  slug: UtilityToolSlug;
   href: string;
   title: string;
   section: string;

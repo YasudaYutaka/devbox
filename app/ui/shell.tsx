@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Box, ChevronLeft, ChevronRight, Home, Search, ShieldCheck } from "lucide-react";
 import { activeBySlug, sectionOrder, tools, type ToolSlug } from "./devbox-data";
+import { LanguageToggle } from "./language-toggle";
+import { useLanguage } from "./language";
 import { cx } from "./primitives";
 import { ThemeToggle } from "./theme-toggle";
+import { getLabels, getSectionLabel } from "./translations";
 
 export function DevBoxShell({
   active,
@@ -47,6 +50,8 @@ export function DevBoxShell({
 
 function Header() {
   const router = useRouter();
+  const { locale } = useLanguage();
+  const text = getLabels(locale);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,8 +59,8 @@ function Header() {
   const filtered = query.trim()
     ? tools.filter(
         (t) =>
-          t.title.toLowerCase().includes(query.toLowerCase()) ||
-          t.subtype.toLowerCase().includes(query.toLowerCase()),
+          text.tools[t.slug].title.toLowerCase().includes(query.toLowerCase()) ||
+          text.tools[t.slug].subtype.toLowerCase().includes(query.toLowerCase()),
       )
     : [];
 
@@ -87,14 +92,14 @@ function Header() {
         <span className="text-base font-bold">DevBox</span>
       </Link>
       <span className="hidden text-[11px] text-[var(--text-muted)] sm:inline">
-        Fast utilities for developers
+        {text.headerTagline}
       </span>
       <div className="flex-1" />
       <div className="relative hidden md:block" ref={containerRef}>
         <div className="flex h-8 w-[220px] items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--bg-page)] px-2.5">
           <Search aria-hidden className="size-3.5 shrink-0 text-[var(--text-muted)]" strokeWidth={2} />
           <input
-            aria-label="Search tools"
+            aria-label={text.searchTools}
             className="min-w-0 flex-1 bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
             onChange={(e) => {
               setQuery(e.target.value);
@@ -102,7 +107,7 @@ function Header() {
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search tools..."
+            placeholder={text.searchPlaceholder}
             value={query}
           />
         </div>
@@ -126,7 +131,7 @@ function Header() {
                     className="size-4 shrink-0 text-[var(--primary)]"
                     strokeWidth={2}
                   />
-                  <span className="truncate">{tool.title}</span>
+                  <span className="truncate">{text.tools[tool.slug].title}</span>
                 </button>
               );
             })}
@@ -135,9 +140,10 @@ function Header() {
       </div>
       <span className="hidden h-6 items-center gap-1 rounded-full bg-[var(--success-bg)] px-2.5 text-[11px] font-medium text-[var(--success)] sm:flex">
         <ShieldCheck aria-hidden className="size-3" strokeWidth={2} />
-        Local-first
+        {text.localFirst}
       </span>
       <ThemeToggle />
+      <LanguageToggle />
       <a
         aria-label="GitHub"
         className="flex size-8 items-center justify-center rounded-md text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
@@ -161,6 +167,8 @@ function Sidebar({
   onToggle: () => void;
 }) {
   const isHome = active === "dashboard";
+  const { locale } = useLanguage();
+  const text = getLabels(locale);
 
   return (
     <aside
@@ -179,7 +187,7 @@ function Sidebar({
               : "text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
           )}
           href="/"
-          title="Home"
+          title={text.home}
         >
           <Home
             aria-hidden
@@ -189,7 +197,7 @@ function Sidebar({
             )}
             strokeWidth={2}
           />
-          {!collapsed && <span className="truncate">Home</span>}
+          {!collapsed && <span className="truncate">{text.home}</span>}
         </Link>
       </div>
 
@@ -203,10 +211,11 @@ function Sidebar({
           >
             {!collapsed && (
               <div className="px-2 py-0 text-[10px] font-semibold uppercase tracking-[1px] text-[var(--text-muted)]">
-                {section}
+                {getSectionLabel(locale, section)}
               </div>
             )}
             {sectionTools.map((tool) => {
+              const localizedTool = text.tools[tool.slug];
               const isActive = activeBySlug[active] === tool.title;
               const Icon = tool.icon;
               return (
@@ -220,7 +229,7 @@ function Sidebar({
                   )}
                   href={tool.href}
                   key={`${section}-${tool.title}`}
-                  title={collapsed ? tool.title : undefined}
+                  title={collapsed ? localizedTool.title : undefined}
                 >
                   <Icon
                     aria-hidden
@@ -230,7 +239,7 @@ function Sidebar({
                     )}
                     strokeWidth={2}
                   />
-                  {!collapsed && <span className="truncate">{tool.title}</span>}
+                  {!collapsed && <span className="truncate">{localizedTool.title}</span>}
                 </Link>
               );
             })}

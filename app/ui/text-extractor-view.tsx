@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Breadcrumbs, Button, Card, PageTitle, cx } from "./primitives";
 import { DevBoxShell } from "./shell";
+import { useLanguage } from "./language";
+import { getLabels } from "./translations";
 
 const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
 const MAX_FILE_SIZE = 12 * 1024 * 1024;
@@ -138,6 +140,59 @@ const formatOptions: Array<{
 let tesseractPromise: Promise<TesseractApi> | null = null;
 
 export function TextExtractorPage() {
+  const { locale } = useLanguage();
+  const labels = getLabels(locale);
+  const pageText = locale === "pt"
+    ? {
+        section: "Ferramentas de Texto",
+        title: "Extrator de Texto",
+        subtitle: "Extraia texto legível de imagens coladas ou anexadas.",
+        imageToText: "Imagem para Texto",
+        attach: "Anexar arquivo",
+        drop: "Solte, cole ou anexe uma imagem",
+        dropHelp: "A imagem é recortada para a área de texto detectada, redimensionada, convertida para tons de cinza, ajustada em contraste, suavizada e binarizada antes do OCR.",
+        noImage: "Nenhuma imagem anexada",
+        afterPreprocessing: "após o pré-processamento",
+        fileTypes: "PNG, JPEG, WebP, GIF, BMP",
+        textType: "Tipo de texto",
+        extract: "Extrair texto",
+        extracted: "Texto extraído",
+        outputLabel: "Saída do OCR",
+        outputPlaceholder: "O texto extraído aparecerá aqui depois que uma imagem for processada.",
+        copyText: "Copiar texto",
+        count: (characters: number, words: number) => `${characters} caracteres / ${words} palavras`,
+        waiting: "Aguardando",
+        ready: "Pronto",
+        quality: "Qualidade",
+        confidence: { High: "Alta", Medium: "Média", Low: "Baixa" },
+        confidenceWord: "confiança",
+        words: "palavras",
+      }
+    : {
+        section: "Text Tools",
+        title: "Text Extractor",
+        subtitle: "Extract readable text from pasted or attached images.",
+        imageToText: "Image to Text",
+        attach: "Attach file",
+        drop: "Drop, paste, or attach an image",
+        dropHelp: "The image is cropped to the detected text area, resized, converted to grayscale, contrast-adjusted, denoised, and binarized before OCR.",
+        noImage: "No image attached",
+        afterPreprocessing: "after preprocessing",
+        fileTypes: "PNG, JPEG, WebP, GIF, BMP",
+        textType: "Text type",
+        extract: "Extract text",
+        extracted: "Extracted text",
+        outputLabel: "OCR output",
+        outputPlaceholder: "Extracted text will appear here after an image is processed.",
+        copyText: "Copy text",
+        count: (characters: number, words: number) => `${characters} characters / ${words} words`,
+        waiting: "Waiting",
+        ready: "Ready",
+        quality: "Quality",
+        confidence: { High: "High", Medium: "Medium", Low: "Low" },
+        confidenceWord: "confidence",
+        words: "words",
+      };
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState("");
   const [processed, setProcessed] = useState<ProcessedImage | null>(null);
@@ -275,11 +330,11 @@ export function TextExtractorPage() {
   return (
     <DevBoxShell active="text-extractor">
       <Breadcrumbs
-        items={[{ label: "DevBox", href: "/" }, { label: "Text Tools" }, { label: "Text Extractor" }]}
+        items={[{ label: "DevBox", href: "/" }, { label: pageText.section }, { label: pageText.title }]}
       />
       <PageTitle
-        title="Text Extractor"
-        subtitle="Extract readable text from pasted or attached images."
+        title={pageText.title}
+        subtitle={pageText.subtitle}
       />
 
       <Card className="min-h-[620px]">
@@ -287,17 +342,17 @@ export function TextExtractorPage() {
           <div className="flex min-w-0 items-center gap-2">
             <ScanText aria-hidden className="size-4 shrink-0 text-[var(--primary)]" strokeWidth={2} />
             <h2 className="truncate text-[15px] font-semibold text-[var(--text-primary)]">
-              Image to Text
+              {pageText.imageToText}
             </h2>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => inputRef.current?.click()}>
               <Upload aria-hidden className="size-3.5" strokeWidth={2} />
-              Attach file
+              {pageText.attach}
             </Button>
             <Button onClick={clearAll} variant="outline">
               <Trash2 aria-hidden className="size-3.5" strokeWidth={2} />
-              Clear
+              {labels.common.clear}
             </Button>
           </div>
         </div>
@@ -334,7 +389,7 @@ export function TextExtractorPage() {
             >
               {processed ? (
                 <NextImage
-                  alt="Preprocessed OCR preview"
+                  alt={pageText.imageToText}
                   className="max-h-[220px] max-w-full rounded-md border border-[var(--border)] bg-white object-contain"
                   height={600}
                   src={processed.previewUrl}
@@ -348,11 +403,10 @@ export function TextExtractorPage() {
                   </span>
                   <span className="flex max-w-[360px] flex-col gap-1">
                     <span className="text-sm font-semibold text-[var(--text-primary)]">
-                      Drop, paste, or attach an image
+                      {pageText.drop}
                     </span>
                     <span className="text-xs leading-5 text-[var(--text-secondary)]">
-                      The image is cropped to the detected text area, resized, converted to grayscale,
-                      contrast-adjusted, denoised, and binarized before OCR.
+                      {pageText.dropHelp}
                     </span>
                   </span>
                 </>
@@ -363,13 +417,13 @@ export function TextExtractorPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-medium text-[var(--text-primary)]">
-                    {fileName || "No image attached"}
+                    {fileName || pageText.noImage}
                   </p>
                   <p className="text-[11px] text-[var(--text-secondary)]">
-                    {processed ? `${processed.sizeLabel} after preprocessing` : "PNG, JPEG, WebP, GIF, BMP"}
+                    {processed ? `${processed.sizeLabel} ${pageText.afterPreprocessing}` : pageText.fileTypes}
                   </p>
                 </div>
-                <QualityPill report={processed?.quality ?? null} />
+                <QualityPill report={processed?.quality ?? null} text={pageText} />
               </div>
             </div>
 
@@ -383,7 +437,7 @@ export function TextExtractorPage() {
               />
               <div className="flex flex-wrap items-center gap-2">
                 <label className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
-                  Text type
+                  {pageText.textType}
                   <select
                     className="h-9 rounded-md border border-[var(--border)] bg-white px-2.5 text-sm font-medium text-[var(--text-primary)] outline-none transition-colors hover:bg-[var(--bg-hover)] focus:border-[var(--primary)] dark:bg-[#1b1f23]"
                     disabled={isProcessing}
@@ -407,7 +461,7 @@ export function TextExtractorPage() {
                   ) : (
                     <ScanText aria-hidden className="size-3.5" strokeWidth={2} />
                   )}
-                  Extract text
+                  {pageText.extract}
                 </Button>
               </div>
             </div>
@@ -422,17 +476,17 @@ export function TextExtractorPage() {
                   strokeWidth={2}
                 />
                 <h3 className="truncate text-sm font-semibold text-[var(--text-primary)]">
-                  Extracted text
+                  {pageText.extracted}
                 </h3>
               </div>
-              <OutputHeader result={result} />
+              <OutputHeader result={result} text={pageText} />
             </div>
 
             <div className="flex min-h-[300px] flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--bg-hover)] p-4">
               <textarea
-                aria-label="OCR output"
+                aria-label={pageText.outputLabel}
                 className="min-h-[150px] flex-1 resize-none bg-transparent font-mono text-sm leading-[1.6] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
-                placeholder="Extracted text will appear here after an image is processed."
+                placeholder={pageText.outputPlaceholder}
                 readOnly
                 value={result?.raw ?? ""}
               />
@@ -440,7 +494,7 @@ export function TextExtractorPage() {
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-[var(--text-secondary)]">
-                {result ? `${result.raw.length} characters / ${result.words} words` : "0 characters / 0 words"}
+                {result ? pageText.count(result.raw.length, result.words) : pageText.count(0, 0)}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -449,7 +503,7 @@ export function TextExtractorPage() {
                   variant="outline"
                 >
                   <Copy aria-hidden className="size-3.5" strokeWidth={2} />
-                  Copy text
+                  {pageText.copyText}
                 </Button>
               </div>
             </div>
@@ -460,11 +514,17 @@ export function TextExtractorPage() {
   );
 }
 
-function QualityPill({ report }: { report: QualityReport | null }) {
+function QualityPill({
+  report,
+  text,
+}: {
+  report: QualityReport | null;
+  text: { waiting: string; quality: string };
+}) {
   if (!report) {
     return (
       <span className="rounded-full bg-[var(--badge-soon-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--badge-soon-text)]">
-        Waiting
+        {text.waiting}
       </span>
     );
   }
@@ -483,16 +543,27 @@ function QualityPill({ report }: { report: QualityReport | null }) {
       ) : (
         <CheckCircle2 aria-hidden className="size-3" strokeWidth={2} />
       )}
-      Quality {report.score}
+      {text.quality} {report.score}
     </span>
   );
 }
 
-function OutputHeader({ result }: { result: OcrResult | null }) {
+function OutputHeader({
+  result,
+  text,
+}: {
+  result: OcrResult | null;
+  text: {
+    ready: string;
+    confidence: Record<OcrResult["confidenceLabel"], string>;
+    confidenceWord: string;
+    words: string;
+  };
+}) {
   if (!result) {
     return (
       <span className="rounded-full bg-[var(--badge-soon-bg)] px-2.5 py-1 text-[11px] font-semibold text-[var(--text-secondary)]">
-        Ready
+        {text.ready}
       </span>
     );
   }
@@ -513,10 +584,10 @@ function OutputHeader({ result }: { result: OcrResult | null }) {
                 : "bg-[var(--success-bg)] text-[var(--success)]",
           )}
         >
-          {result.confidenceLabel} confidence ({Math.round(result.confidence)}%)
+          {text.confidence[result.confidenceLabel]} {text.confidenceWord} ({Math.round(result.confidence)}%)
         </span>
         <span className="rounded-full bg-[var(--bg-surface)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)]">
-          {result.words} words
+          {result.words} {text.words}
         </span>
       </div>
       <span className="text-xs text-[var(--text-secondary)]">{result.validationMessage}</span>

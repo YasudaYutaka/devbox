@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { Badge, Breadcrumbs, Button, Card, PageTitle, cx } from "./primitives";
 import { DevBoxShell } from "./shell";
+import { useLanguage } from "./language";
+import { getLabels } from "./translations";
 
 const defaultQuantity = 100;
 const softBatchQuantity = 1000;
@@ -30,6 +32,81 @@ const uuidV4Pattern =
 type Notice = "copied" | "csv" | null;
 
 export function UuidToolsPage() {
+  const { locale } = useLanguage();
+  const labels = getLabels(locale);
+  const pageText = locale === "pt"
+    ? {
+        section: "Geradores",
+        title: "Ferramentas de UUID",
+        subtitle: "Gere e transforme UUIDs rapidamente.",
+        quick: "Utilitário rápido de UUID",
+        valid: "UUID v4 válido",
+        invalid: "UUID inválido",
+        uuidValue: "Valor do UUID",
+        placeholder: "Cole ou gere um UUID...",
+        generateUuid: "Gerar UUID",
+        addHyphen: "Adicionar hífens",
+        removeHyphen: "Remover hífens",
+        uppercase: "Maiúsculas",
+        lowercase: "Minúsculas",
+        batch: "Gerador de UUID em lote",
+        csvReady: "CSV pronto",
+        quantity: "Quantidade",
+        outputOptions: "Opções de saída",
+        removeHyphens: "Remover hífens",
+        limit: "Limite",
+        largeBatch: (quantity: string) => `Lote grande: a confirmação começa acima de ${quantity} UUIDs.`,
+        resultsAppear: "Os resultados aparecem assim que um lote é gerado.",
+        results: "Resultados",
+        generatingBatch: "Gerando lote de UUIDs...",
+        emptyBatch: "Gere um lote para ver os UUIDs aqui.",
+        copyUuid: (index: number) => `Copiar UUID ${index}`,
+        copyFailed: "Não foi possível copiar. Selecione o UUID e copie manualmente.",
+        addHyphenError: "Digite exatamente 32 caracteres hexadecimais para adicionar hífens.",
+        quantityRange: "Digite uma quantidade entre 1 e 10.000.",
+        quantityMin: "A quantidade deve ser pelo menos 1.",
+        quantityMax: (quantity: string) => `Digite ${quantity} UUIDs ou menos.`,
+        largeTitle: "Gerar lote grande de UUIDs?",
+        largeBody: (quantity: string) =>
+          `Você está prestes a gerar ${quantity} UUIDs. Lotes grandes podem demorar para renderizar e copiar.`,
+        cancel: "Cancelar",
+      }
+    : {
+        section: "Generators",
+        title: "UUID Tools",
+        subtitle: "Generate and transform UUIDs quickly.",
+        quick: "Quick UUID Utility",
+        valid: "Valid UUID v4",
+        invalid: "Invalid UUID",
+        uuidValue: "UUID value",
+        placeholder: "Paste or generate a UUID...",
+        generateUuid: "Generate UUID",
+        addHyphen: "Add Hyphen",
+        removeHyphen: "Remove Hyphen",
+        uppercase: "To Uppercase",
+        lowercase: "To Lowercase",
+        batch: "Batch UUID Generator",
+        csvReady: "CSV ready",
+        quantity: "Quantity",
+        outputOptions: "Output options",
+        removeHyphens: "Remove hyphens",
+        limit: "Limit",
+        largeBatch: (quantity: string) => `Large batch: confirmation starts above ${quantity} UUIDs.`,
+        resultsAppear: "Results appear as soon as a batch is generated.",
+        results: "Results",
+        generatingBatch: "Generating UUID batch...",
+        emptyBatch: "Generate a batch to see UUIDs here.",
+        copyUuid: (index: number) => `Copy UUID ${index}`,
+        copyFailed: "Copy failed. Select the UUID and copy it manually.",
+        addHyphenError: "Enter exactly 32 hexadecimal characters to add hyphens.",
+        quantityRange: "Enter a quantity between 1 and 10,000.",
+        quantityMin: "Quantity must be at least 1.",
+        quantityMax: (quantity: string) => `Enter ${quantity} UUIDs or fewer.`,
+        largeTitle: "Generate large UUID batch?",
+        largeBody: (quantity: string) =>
+          `You are about to generate ${quantity} UUIDs. Large batches can take a moment to render and copy.`,
+        cancel: "Cancel",
+      };
   const [uuidValue, setUuidValue] = useState("");
   const [quickNotice, setQuickNotice] = useState<Notice>(null);
   const [quickError, setQuickError] = useState("");
@@ -43,7 +120,11 @@ export function UuidToolsPage() {
   const [pendingBatchQuantity, setPendingBatchQuantity] = useState<number | null>(null);
   const [isBatchGenerating, setIsBatchGenerating] = useState(false);
 
-  const quantityStatus = useMemo(() => parseQuantity(quantity), [quantity]);
+  const quantityStatus = parseQuantity(quantity, {
+    range: pageText.quantityRange,
+    min: pageText.quantityMin,
+    max: pageText.quantityMax(maxBatchQuantity.toLocaleString()),
+  });
   const quickStatus = getUuidStatus(uuidValue);
   const hasBatchResults = batchUuids.length > 0;
 
@@ -57,7 +138,7 @@ export function UuidToolsPage() {
     const normalized = uuidValue.replaceAll("-", "");
 
     if (!uuidHexPattern.test(normalized)) {
-      setQuickError("Enter exactly 32 hexadecimal characters to add hyphens.");
+      setQuickError(pageText.addHyphenError);
       setQuickNotice(null);
       return;
     }
@@ -81,12 +162,16 @@ export function UuidToolsPage() {
 
   async function handleCopySingle() {
     const didCopy = await copyText(uuidValue);
-    setQuickError(didCopy ? "" : "Copy failed. Select the UUID and copy it manually.");
+    setQuickError(didCopy ? "" : pageText.copyFailed);
     showQuickNotice(didCopy ? "copied" : null);
   }
 
   function handleGenerateBatch() {
-    const count = parseQuantity(quantity);
+    const count = parseQuantity(quantity, {
+      range: pageText.quantityRange,
+      min: pageText.quantityMin,
+      max: pageText.quantityMax(maxBatchQuantity.toLocaleString()),
+    });
 
     if (!count.valid) {
       setBatchError(count.message);
@@ -200,18 +285,18 @@ export function UuidToolsPage() {
 
   return (
     <DevBoxShell active="uuid-tools">
-      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: "Generators" }, { label: "UUID Tools" }]} />
-      <PageTitle title="UUID Tools" subtitle="Generate and transform UUIDs quickly." />
+      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: pageText.section }, { label: pageText.title }]} />
+      <PageTitle title={pageText.title} subtitle={pageText.subtitle} />
 
       <Card>
         <ToolCardHeader
           icon={Zap}
           iconClassName="text-[var(--primary)] dark:text-[var(--border)]"
-          title="Quick UUID Utility"
+          title={pageText.quick}
           aside={
             quickStatus === "empty" ? null : (
               <Badge variant={quickStatus === "valid" ? "success" : "danger"}>
-                {quickStatus === "valid" ? "Valid UUID v4" : "Invalid UUID"}
+                {quickStatus === "valid" ? pageText.valid : pageText.invalid}
               </Badge>
             )
           }
@@ -220,14 +305,14 @@ export function UuidToolsPage() {
           <div className="flex h-14 min-w-0 overflow-hidden rounded-lg">
             <div className="flex min-w-0 flex-1 items-center rounded-l-lg border border-[var(--border)] bg-[var(--bg-page)] px-[18px]">
               <input
-                aria-label="UUID value"
+                aria-label={pageText.uuidValue}
                 className="min-w-0 flex-1 bg-transparent font-mono text-[13.5px] font-medium text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
                 onChange={(event) => {
                   setUuidValue(event.target.value);
                   setQuickError("");
                   setQuickNotice(null);
                 }}
-                placeholder="Paste or generate a UUID..."
+                placeholder={pageText.placeholder}
                 spellCheck={false}
                 value={uuidValue}
               />
@@ -238,7 +323,7 @@ export function UuidToolsPage() {
               type="button"
             >
               <Copy aria-hidden className="size-4" strokeWidth={2} />
-              Copy
+              {labels.common.copy}
             </button>
           </div>
 
@@ -248,31 +333,31 @@ export function UuidToolsPage() {
                 {quickError}
               </span>
             ) : quickNotice === "copied" ? (
-              <StatusPill icon={Check}>Copied!</StatusPill>
+              <StatusPill icon={Check}>{labels.common.copied}</StatusPill>
             ) : null}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 rounded-[9px] bg-[var(--bg-page)] p-2">
             <Button onClick={handleGenerateSingle}>
               <RefreshCw aria-hidden className="size-3.5" strokeWidth={2} />
-              Generate UUID
+              {pageText.generateUuid}
             </Button>
             <div className="hidden h-6 w-px bg-[var(--border)] sm:block" />
             <Button onClick={handleAddHyphen} variant="outline">
               <Plus aria-hidden className="size-3" strokeWidth={2} />
-              Add Hyphen
+              {pageText.addHyphen}
             </Button>
             <Button onClick={handleRemoveHyphen} variant="outline">
               <Minus aria-hidden className="size-3" strokeWidth={2} />
-              Remove Hyphen
+              {pageText.removeHyphen}
             </Button>
             <Button onClick={() => handleCaseChange("upper")} variant="outline">
               <ArrowUp aria-hidden className="size-3" strokeWidth={2} />
-              To Uppercase
+              {pageText.uppercase}
             </Button>
             <Button onClick={() => handleCaseChange("lower")} variant="outline">
               <ArrowDown aria-hidden className="size-3" strokeWidth={2} />
-              To Lowercase
+              {pageText.lowercase}
             </Button>
           </div>
         </div>
@@ -282,12 +367,12 @@ export function UuidToolsPage() {
         <ToolCardHeader
           icon={Layers}
           iconClassName="text-[#737373] dark:text-[var(--text-secondary)]"
-          title="Batch UUID Generator"
+          title={pageText.batch}
           aside={
             <div className="flex flex-wrap justify-end gap-1.5">
               <Button disabled={!hasBatchResults || isBatchGenerating} onClick={handleCopyBatch} variant="outline">
                 <Copy aria-hidden className="size-3" strokeWidth={2} />
-                Copy
+                {labels.common.copy}
               </Button>
               <Button disabled={!hasBatchResults || isBatchGenerating} onClick={handleDownloadCsv} variant="outline">
                 <Download aria-hidden className="size-3" strokeWidth={2} />
@@ -295,14 +380,14 @@ export function UuidToolsPage() {
               </Button>
               <Button disabled={!hasBatchResults || isBatchGenerating} onClick={handleClearBatch} variant="ghost">
                 <Trash2 aria-hidden className="size-3" strokeWidth={2} />
-                Clear
+                {labels.common.clear}
               </Button>
             </div>
           }
         />
         <div className="grid gap-5 p-6 lg:grid-cols-[260px_minmax(0,1fr)]">
           <div className="flex flex-col gap-3.5 rounded-lg border border-[var(--border)] bg-[var(--bg-page)] p-4">
-            <PanelLabel>Quantity</PanelLabel>
+            <PanelLabel>{pageText.quantity}</PanelLabel>
             <div className="flex h-[38px] gap-2">
               <input
                 aria-label="Batch quantity"
@@ -323,25 +408,25 @@ export function UuidToolsPage() {
                   className={cx("size-3.5 fill-current", isBatchGenerating && "animate-spin")}
                   strokeWidth={2}
                 />
-                {isBatchGenerating ? "Generating" : "Generate"}
+                {isBatchGenerating ? labels.common.generating : labels.common.generate}
               </Button>
             </div>
 
-            <PanelLabel>Output options</PanelLabel>
+            <PanelLabel>{pageText.outputOptions}</PanelLabel>
             <CheckboxControl
               checked={batchUppercase}
-              label="Uppercase"
+              label={pageText.uppercase}
               onChange={setBatchUppercase}
             />
             <CheckboxControl
               checked={batchRemoveHyphens}
-              label="Remove hyphens"
+              label={pageText.removeHyphens}
               onChange={setBatchRemoveHyphens}
             />
 
             <div className="flex flex-col gap-1.5 rounded-[7px] border border-[var(--border)] bg-[var(--bg-surface)] p-3">
               <h3 className="text-xs font-semibold text-[var(--text-primary)]">
-                Limit: {maxBatchQuantity.toLocaleString()} UUIDs
+                {pageText.limit}: {maxBatchQuantity.toLocaleString()} UUIDs
               </h3>
               <p
                 aria-live="polite"
@@ -353,17 +438,17 @@ export function UuidToolsPage() {
                 {batchError ||
                   quantityStatus.message ||
                   (quantityStatus.valid && quantityStatus.value > softBatchQuantity
-                    ? `Large batch: confirmation starts above ${softBatchQuantity.toLocaleString()} UUIDs.`
-                    : "Results appear as soon as a batch is generated.")}
+                    ? pageText.largeBatch(softBatchQuantity.toLocaleString())
+                    : pageText.resultsAppear)}
               </p>
             </div>
           </div>
 
           <div className="flex min-w-0 flex-col gap-2.5">
             <div className="flex min-h-6 items-center justify-between gap-3">
-              <PanelLabel>Results ({batchUuids.length})</PanelLabel>
-              {batchNotice === "copied" ? <StatusPill icon={Check}>Copied!</StatusPill> : null}
-              {batchNotice === "csv" ? <StatusPill icon={Download}>CSV ready</StatusPill> : null}
+              <PanelLabel>{pageText.results} ({batchUuids.length})</PanelLabel>
+              {batchNotice === "copied" ? <StatusPill icon={Check}>{labels.common.copied}</StatusPill> : null}
+              {batchNotice === "csv" ? <StatusPill icon={Download}>{pageText.csvReady}</StatusPill> : null}
             </div>
             <div className="flex max-h-[430px] min-h-[230px] min-w-0 flex-col gap-1.5 overflow-auto rounded-lg border border-[var(--border)] bg-[var(--bg-page)] p-2">
               {isBatchGenerating ? (
@@ -371,7 +456,7 @@ export function UuidToolsPage() {
                   <span className="flex size-9 items-center justify-center rounded-md bg-[var(--bg-active)] text-[var(--primary)]">
                     <Play aria-hidden className="size-4 animate-spin fill-current" strokeWidth={2} />
                   </span>
-                  <span>Generating UUID batch...</span>
+                  <span>{pageText.generatingBatch}</span>
                 </div>
               ) : hasBatchResults ? (
                 batchUuids.map((uuid, index) => (
@@ -383,10 +468,10 @@ export function UuidToolsPage() {
                       {uuid}
                     </span>
                     <button
-                      aria-label={`Copy UUID ${index + 1}`}
+                      aria-label={pageText.copyUuid(index + 1)}
                       className="inline-flex size-6 shrink-0 items-center justify-center rounded text-[#737373] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] dark:text-[var(--text-secondary)]"
                       onClick={() => handleCopyBatchRow(uuid, index)}
-                      title="Copy UUID"
+                      title={pageText.copyUuid(index + 1)}
                       type="button"
                     >
                       {copiedBatchIndex === index ? (
@@ -399,7 +484,7 @@ export function UuidToolsPage() {
                 ))
               ) : (
                 <div className="flex min-h-[210px] items-center justify-center rounded-md bg-[var(--bg-surface)] p-6 text-center text-xs text-[var(--text-secondary)]">
-                  Generate a batch to see UUIDs here.
+                  {pageText.emptyBatch}
                 </div>
               )}
             </div>
@@ -410,6 +495,8 @@ export function UuidToolsPage() {
       {pendingBatchQuantity !== null ? (
         <LargeBatchDialog
           quantity={pendingBatchQuantity}
+          text={pageText}
+          generateLabel={labels.common.generate}
           onCancel={handleCancelLargeBatch}
           onConfirm={handleConfirmLargeBatch}
         />
@@ -465,26 +552,29 @@ function getUuidStatus(value: string) {
   return uuidV4Pattern.test(value.trim()) ? "valid" : "invalid";
 }
 
-function parseQuantity(value: string):
+function parseQuantity(
+  value: string,
+  messages: { range: string; min: string; max: string },
+):
   | { valid: true; value: number; message: "" }
   | { valid: false; value: null; message: string } {
   const normalized = value.trim();
 
   if (!/^\d+$/.test(normalized)) {
-    return { valid: false, value: null, message: "Enter a quantity between 1 and 10,000." };
+    return { valid: false, value: null, message: messages.range };
   }
 
   const parsed = Number.parseInt(normalized, 10);
 
   if (parsed < 1) {
-    return { valid: false, value: null, message: "Quantity must be at least 1." };
+    return { valid: false, value: null, message: messages.min };
   }
 
   if (parsed > maxBatchQuantity) {
     return {
       valid: false,
       value: null,
-      message: `Enter ${maxBatchQuantity.toLocaleString()} UUIDs or fewer.`,
+      message: messages.max,
     };
   }
 
@@ -586,10 +676,18 @@ function StatusPill({
 
 function LargeBatchDialog({
   quantity,
+  text,
+  generateLabel,
   onCancel,
   onConfirm,
 }: {
   quantity: number;
+  text: {
+    largeTitle: string;
+    largeBody: (quantity: string) => string;
+    cancel: string;
+  };
+  generateLabel: string;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -607,20 +705,20 @@ function LargeBatchDialog({
           </span>
           <div className="min-w-0">
             <h2 id="large-batch-title" className="text-[15px] font-semibold text-[var(--text-primary)]">
-              Generate large UUID batch?
+              {text.largeTitle}
             </h2>
             <p className="mt-1 text-[13px] leading-5 text-[var(--text-secondary)]">
-              You are about to generate {quantity.toLocaleString()} UUIDs. Large batches can take a moment to render and copy.
+              {text.largeBody(quantity.toLocaleString())}
             </p>
           </div>
         </div>
         <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end">
           <Button className="w-full sm:w-auto" onClick={onCancel} variant="outline">
-            Cancel
+            {text.cancel}
           </Button>
           <Button className="w-full sm:w-auto" onClick={onConfirm}>
             <Play aria-hidden className="size-3.5 fill-current" strokeWidth={2} />
-            Generate
+            {generateLabel}
           </Button>
         </div>
       </div>

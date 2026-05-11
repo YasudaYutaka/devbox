@@ -13,6 +13,8 @@ import {
 import { diffChars } from "diff";
 import { Breadcrumbs, Button, Card, PageTitle, cx } from "./primitives";
 import { DevBoxShell } from "./shell";
+import { useLanguage } from "./language";
+import { getLabels } from "./translations";
 
 type Segment = { type: "equal" | "added" | "removed"; text: string };
 
@@ -20,6 +22,67 @@ const diffSoftLimitBytes = 500 * 1024;
 const diffHardLimitBytes = 1024 * 1024;
 
 export function TextDiffPage() {
+  const { locale } = useLanguage();
+  const labels = getLabels(locale);
+  const pageText = locale === "pt"
+    ? {
+        section: "Comparadores",
+        title: "Comparador de Texto",
+        subtitle: "Compare dois textos e veja apenas as diferenças instantaneamente.",
+        compare: "Comparar",
+        switch: "Trocar",
+        pasteTitle: "Cole o texto para comparar",
+        text1: "Texto 1",
+        text2: "Texto 2",
+        original: "Texto original",
+        modified: "Texto modificado",
+        ignoreWhitespace: "Ignorar espaços",
+        ignoreCase: "Ignorar maiúsculas/minúsculas",
+        showOnlyDiff: "Mostrar apenas diferenças",
+        inline: "Inline",
+        sideBySide: "Lado a lado",
+        result: "Resultado da comparação",
+        segment: "segmento",
+        segments: "segmentos",
+        matches: "iguais",
+        empty: "Cole texto nos dois painéis e pressione Comparar para ver as diferenças.",
+        tooLarge: (limit: string) => `Entrada grande demais - cada campo é limitado a ${limit}.`,
+        largeInput: (left: string, right: string, limit: string) =>
+          `Entrada grande: texto 1 tem ${left}, texto 2 tem ${right}. A comparação pedirá confirmação acima de ${limit}.`,
+        confirmLarge: "Esta comparação é grande e pode ser mais lenta para renderizar. Continuar?",
+        inlineTitle: "Comparação de segmentos inline",
+        sideTitle: "Comparação de segmentos lado a lado",
+        placeholder: "Cole ou digite o texto aqui...",
+      }
+    : {
+        section: "Comparators",
+        title: "Text Diff",
+        subtitle: "Compare two texts and instantly spot only the differences.",
+        compare: "Compare",
+        switch: "Switch",
+        pasteTitle: "Paste text to compare",
+        text1: "Text 1",
+        text2: "Text 2",
+        original: "Original text",
+        modified: "Modified text",
+        ignoreWhitespace: "Ignore whitespace",
+        ignoreCase: "Ignore case",
+        showOnlyDiff: "Show only differences",
+        inline: "Inline",
+        sideBySide: "Side-by-side",
+        result: "Diff result",
+        segment: "segment",
+        segments: "segments",
+        matches: "matches",
+        empty: "Paste text in both panels and press Compare to see differences.",
+        tooLarge: (limit: string) => `Input too large - each field is limited to ${limit}.`,
+        largeInput: (left: string, right: string, limit: string) =>
+          `Large input: text 1 is ${left}, text 2 is ${right}. Compare will ask for confirmation above ${limit}.`,
+        confirmLarge: "This is a large diff and may be slower to render. Continue?",
+        inlineTitle: "Inline segment comparison",
+        sideTitle: "Side-by-side segment comparison",
+        placeholder: "Paste or type text here...",
+      };
   const [text1, setText1] = useState("");
   const [text2, setText2] = useState("");
   const [ignoreWhitespace, setIgnoreWhitespace] = useState(false);
@@ -58,7 +121,7 @@ export function TextDiffPage() {
   }
 
   function handleCompare() {
-    if (isOverSoftLimit && !window.confirm("This is a large diff and may be slower to render. Continue?")) {
+    if (isOverSoftLimit && !window.confirm(pageText.confirmLarge)) {
       return;
     }
 
@@ -96,24 +159,24 @@ export function TextDiffPage() {
   return (
     <DevBoxShell active="text-diff">
       <Breadcrumbs
-        items={[{ label: "DevBox", href: "/" }, { label: "Comparators" }, { label: "Text Diff" }]}
+        items={[{ label: "DevBox", href: "/" }, { label: pageText.section }, { label: pageText.title }]}
       />
       <PageTitle
-        title="Text Diff"
-        subtitle="Compare two texts and instantly spot only the differences."
+        title={pageText.title}
+        subtitle={pageText.subtitle}
         action={
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Button onClick={handleCompare}>
               <GitCompareArrows aria-hidden className="size-3.5" strokeWidth={2} />
-              Compare
+              {pageText.compare}
             </Button>
             <Button variant="outline" onClick={handleSwitch}>
               <ArrowLeftRight aria-hidden className="size-3.5" strokeWidth={2} />
-              Switch
+              {pageText.switch}
             </Button>
             <Button variant="ghost" onClick={handleClear}>
               <X aria-hidden className="size-3.5" strokeWidth={2} />
-              Clear all
+              {labels.common.clearAll}
             </Button>
           </div>
         }
@@ -121,21 +184,23 @@ export function TextDiffPage() {
 
       <Card>
         <div className="flex flex-col gap-3 p-4 sm:p-6">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)]">Paste text to compare</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)]">{pageText.pasteTitle}</h2>
           <div className="grid gap-4 lg:grid-cols-2">
             <TextEditorPanel
               accent="primary"
-              helper="Text 1"
-              title="Original text"
+              helper={pageText.text1}
+              title={pageText.original}
               value={text1}
               onChange={setText1}
+              placeholder={pageText.placeholder}
             />
             <TextEditorPanel
               accent="success"
-              helper="Text 2"
-              title="Modified text"
+              helper={pageText.text2}
+              title={pageText.modified}
               value={text2}
               onChange={setText2}
+              placeholder={pageText.placeholder}
             />
           </div>
         </div>
@@ -145,21 +210,21 @@ export function TextDiffPage() {
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <CheckboxPreview
             checked={ignoreWhitespace}
-            label="Ignore whitespace"
+            label={pageText.ignoreWhitespace}
             onChange={setIgnoreWhitespace}
           />
           <CheckboxPreview
             checked={ignoreCase}
-            label="Ignore case"
+            label={pageText.ignoreCase}
             onChange={setIgnoreCase}
           />
           <CheckboxPreview
             checked={showOnlyDiff}
-            label="Show only differences"
+            label={pageText.showOnlyDiff}
             onChange={setShowOnlyDiff}
           />
         </div>
-        <SegmentedTabs value={mode} onChange={setMode} />
+        <SegmentedTabs value={mode} onChange={setMode} labels={{ inline: pageText.inline, sideBySide: pageText.sideBySide }} />
       </div>
 
       <Card className="min-h-[360px]">
@@ -167,26 +232,26 @@ export function TextDiffPage() {
           <div className="flex min-w-0 items-center gap-2">
             <Sparkles aria-hidden className="size-4 shrink-0 text-[var(--primary)]" strokeWidth={2} />
             <h2 className="truncate text-sm font-semibold text-[var(--text-primary)]">
-              Diff result
+              {pageText.result}
             </h2>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {result && (
               <>
                 {addedCount > 0 && (
-                  <ResultBadge tone="added">+{addedCount} segment{addedCount !== 1 ? "s" : ""}</ResultBadge>
+                  <ResultBadge tone="added">+{addedCount} {addedCount !== 1 ? pageText.segments : pageText.segment}</ResultBadge>
                 )}
                 {removedCount > 0 && (
-                  <ResultBadge tone="removed">-{removedCount} segment{removedCount !== 1 ? "s" : ""}</ResultBadge>
+                  <ResultBadge tone="removed">-{removedCount} {removedCount !== 1 ? pageText.segments : pageText.segment}</ResultBadge>
                 )}
                 {equalCount > 0 && (
-                  <ResultBadge tone="changed">{equalCount} match{equalCount !== 1 ? "es" : ""}</ResultBadge>
+                  <ResultBadge tone="changed">{equalCount} {pageText.matches}</ResultBadge>
                 )}
               </>
             )}
             <Button variant="outline" onClick={handleCopy} disabled={!result || tooLong}>
               <Copy aria-hidden className="size-3" strokeWidth={2} />
-              {copied ? "Copied!" : "Copy"}
+              {copied ? labels.common.copied : labels.common.copy}
             </Button>
           </div>
         </div>
@@ -195,14 +260,14 @@ export function TextDiffPage() {
           {!result && !tooLong && (
             <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-page)] px-3 py-2 text-xs text-[var(--text-secondary)]">
               <Info aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
-              <span>Paste text in both panels and press Compare to see differences.</span>
+              <span>{pageText.empty}</span>
             </div>
           )}
 
           {tooLong && (
             <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--error-bg)] px-3 py-2 text-xs text-[var(--error)]">
               <Info aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
-              <span>Input too large - each field is limited to {formatBytes(diffHardLimitBytes)}.</span>
+              <span>{pageText.tooLarge(formatBytes(diffHardLimitBytes))}</span>
             </div>
           )}
 
@@ -210,20 +275,20 @@ export function TextDiffPage() {
             <div className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--warning-bg)] px-3 py-2 text-xs text-[var(--warning)]">
               <Info aria-hidden className="size-3.5 shrink-0" strokeWidth={2} />
               <span>
-                Large input: text 1 is {formatBytes(text1Size)}, text 2 is {formatBytes(text2Size)}. Compare will ask for confirmation above {formatBytes(diffSoftLimitBytes)}.
+                {pageText.largeInput(formatBytes(text1Size), formatBytes(text2Size), formatBytes(diffSoftLimitBytes))}
               </span>
             </div>
           )}
 
           {displaySegments && !tooLong && mode === "inline" && (
-            <PreviewCard title="Inline segment comparison">
+            <PreviewCard title={pageText.inlineTitle}>
               <div className="flex flex-col gap-2 font-mono text-[11px] text-[var(--text-primary)]">
                 <div className="leading-relaxed">
-                  <span className="mr-1.5 text-[var(--text-secondary)]">Text 1:</span>
+                  <span className="mr-1.5 text-[var(--text-secondary)]">{pageText.text1}:</span>
                   {renderSegs(displaySegments, "left")}
                 </div>
                 <div className="leading-relaxed">
-                  <span className="mr-1.5 text-[var(--text-secondary)]">Text 2:</span>
+                  <span className="mr-1.5 text-[var(--text-secondary)]">{pageText.text2}:</span>
                   {renderSegs(displaySegments, "right")}
                 </div>
               </div>
@@ -231,10 +296,10 @@ export function TextDiffPage() {
           )}
 
           {displaySegments && !tooLong && mode === "side-by-side" && (
-            <PreviewCard title="Side-by-side segment comparison">
+            <PreviewCard title={pageText.sideTitle}>
               <div className="grid gap-3 lg:grid-cols-2">
-                <DiffSideColumn label="Text 1">{renderSegs(displaySegments, "left")}</DiffSideColumn>
-                <DiffSideColumn label="Text 2">{renderSegs(displaySegments, "right")}</DiffSideColumn>
+                <DiffSideColumn label={pageText.text1}>{renderSegs(displaySegments, "left")}</DiffSideColumn>
+                <DiffSideColumn label={pageText.text2}>{renderSegs(displaySegments, "right")}</DiffSideColumn>
               </div>
             </PreviewCard>
           )}
@@ -250,12 +315,14 @@ function TextEditorPanel({
   title,
   value,
   onChange,
+  placeholder,
 }: {
   accent: "primary" | "success";
   helper: string;
   title: string;
   value: string;
   onChange: (v: string) => void;
+  placeholder: string;
 }) {
   return (
     <div className="flex h-[148px] min-w-0 flex-col overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg-surface)]">
@@ -277,7 +344,7 @@ function TextEditorPanel({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
-        placeholder="Paste or type text here…"
+        placeholder={placeholder}
       />
     </div>
   );
@@ -319,9 +386,11 @@ function CheckboxPreview({
 function SegmentedTabs({
   value,
   onChange,
+  labels,
 }: {
   value: "inline" | "side-by-side";
   onChange: (v: "inline" | "side-by-side") => void;
+  labels: { inline: string; sideBySide: string };
 }) {
   return (
     <div className="flex h-10 w-fit shrink-0 items-center overflow-hidden rounded-md bg-[var(--bg-page)] p-1">
@@ -336,7 +405,7 @@ function SegmentedTabs({
               : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
           )}
         >
-          {tab === "inline" ? "Inline" : "Side-by-side"}
+          {tab === "inline" ? labels.inline : labels.sideBySide}
         </button>
       ))}
     </div>

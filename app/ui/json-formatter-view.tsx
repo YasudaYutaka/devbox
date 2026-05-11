@@ -4,6 +4,8 @@ import { useState } from "react";
 import { CheckCircle2, Copy, FileJson2, Minimize2 } from "lucide-react";
 import { Breadcrumbs, Card, cx } from "./primitives";
 import { DevBoxShell } from "./shell";
+import { useLanguage } from "./language";
+import { getLabels } from "./translations";
 
 const jsonSoftLimitBytes = 500 * 1024;
 const jsonHardLimitBytes = 2 * 1024 * 1024;
@@ -34,6 +36,39 @@ function validateJson(input: string): { valid: boolean; error: string } {
 }
 
 export function JsonFormatterPage() {
+  const { locale } = useLanguage();
+  const labels = getLabels(locale);
+  const pageText = locale === "pt"
+    ? {
+        section: "Formatadores e Validadores",
+        title: "Formatador / Validador de JSON",
+        subtitle: "Formate, minifique e valide JSON.",
+        format: "Formatar",
+        minify: "Minificar",
+        input: "JSON de entrada",
+        output: "JSON de saída",
+        valid: "JSON válido",
+        invalid: "JSON inválido",
+        largeInput: (size: string, limit: string) =>
+          `Entrada grande: ${size}. A formatação de JSON é limitada a ${limit}.`,
+        sizeError: (size: string, limit: string) =>
+          `A entrada tem ${size}. A formatação de JSON é limitada a ${limit}.`,
+      }
+    : {
+        section: "Formatters & Validators",
+        title: "JSON Formatter / Validator",
+        subtitle: "Format, minify, and validate JSON.",
+        format: "Format",
+        minify: "Minify",
+        input: "Input JSON",
+        output: "Output JSON",
+        valid: "Valid JSON",
+        invalid: "Invalid JSON",
+        largeInput: (size: string, limit: string) =>
+          `Large input: ${size}. JSON formatting is limited to ${limit}.`,
+        sizeError: (size: string, limit: string) =>
+          `Input is ${size}. JSON formatting is limited to ${limit}.`,
+      };
   const [inputJson, setInputJson] = useState("");
   const [outputJson, setOutputJson] = useState("");
   const [status, setStatus] = useState<"valid" | "invalid" | "idle">("idle");
@@ -43,7 +78,7 @@ export function JsonFormatterPage() {
   const isOverSoftLimit = inputSize > jsonSoftLimitBytes;
 
   function handleFormat() {
-    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson)) {
+    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson, pageText.sizeError)) {
       return;
     }
 
@@ -60,7 +95,7 @@ export function JsonFormatterPage() {
   }
 
   function handleMinify() {
-    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson)) {
+    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson, pageText.sizeError)) {
       return;
     }
 
@@ -77,7 +112,7 @@ export function JsonFormatterPage() {
   }
 
   function handleValidate() {
-    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson)) {
+    if (!checkJsonSize(inputSize, setStatus, setErrorMsg, setOutputJson, pageText.sizeError)) {
       return;
     }
 
@@ -90,51 +125,51 @@ export function JsonFormatterPage() {
   async function handleCopy() {
     if (!outputJson) return;
     await navigator.clipboard.writeText(outputJson);
-    setNotice("Copied!");
+    setNotice(labels.common.copied);
     setTimeout(() => setNotice(""), 1600);
   }
 
   return (
     <DevBoxShell active="json-formatter">
-      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: "Formatters & Validators" }, { label: "JSON Formatter" }]} />
+      <Breadcrumbs items={[{ label: "DevBox", href: "/" }, { label: pageText.section }, { label: pageText.title }]} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-[22px] font-semibold leading-tight tracking-normal text-[var(--text-primary)]">
-              JSON Formatter / Validator
+              {pageText.title}
             </h1>
             {status === "valid" && (
               <span className="inline-flex h-[22px] items-center justify-center rounded-full bg-[var(--success-bg)] px-2 text-[11px] font-semibold text-[var(--success)]">
-                Valid JSON
+                {pageText.valid}
               </span>
             )}
             {status === "invalid" && (
               <span className="inline-flex h-[22px] items-center justify-center rounded-full bg-[var(--error-bg)] px-2 text-[11px] font-semibold text-[var(--error)]">
-                Invalid JSON
+                {pageText.invalid}
               </span>
             )}
           </div>
           <p className="text-[13px] text-[var(--text-secondary)]">
-            Format, minify, and validate JSON.
+            {pageText.subtitle}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <JsonActionButton icon={FileJson2} onClick={handleFormat}>Format</JsonActionButton>
+          <JsonActionButton icon={FileJson2} onClick={handleFormat}>{pageText.format}</JsonActionButton>
           <JsonActionButton icon={Minimize2} variant="outline" onClick={handleMinify}>
-            Minify
+            {pageText.minify}
           </JsonActionButton>
           <JsonActionButton icon={CheckCircle2} variant="outline" onClick={handleValidate}>
-            Validate
+            {labels.common.validate}
           </JsonActionButton>
         </div>
       </div>
       <div className="grid min-h-[620px] gap-4 lg:grid-cols-2">
-        <InputPanel title="Input JSON" value={inputJson} onChange={setInputJson} />
-        <OutputPanel title="Output JSON" value={outputJson} notice={notice} onCopy={handleCopy} />
+        <InputPanel title={pageText.input} value={inputJson} onChange={setInputJson} />
+        <OutputPanel title={pageText.output} value={outputJson} notice={notice} onCopy={handleCopy} copyLabel={labels.common.copy} />
       </div>
       {isOverSoftLimit && status !== "invalid" && (
         <p className="text-[12px] font-medium text-[var(--warning)]">
-          Large input: {formatBytes(inputSize)}. JSON formatting is limited to {formatBytes(jsonHardLimitBytes)}.
+          {pageText.largeInput(formatBytes(inputSize), formatBytes(jsonHardLimitBytes))}
         </p>
       )}
       {status === "invalid" && errorMsg && (
@@ -165,11 +200,13 @@ function OutputPanel({
   value,
   notice,
   onCopy,
+  copyLabel,
 }: {
   title: string;
   value: string;
   notice: string;
   onCopy: () => void;
+  copyLabel: string;
 }) {
   return (
     <Card className="flex min-h-[420px] flex-col">
@@ -183,7 +220,7 @@ function OutputPanel({
             className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-2.5 text-[11px] font-medium text-[var(--text-primary)] shadow-[0_1px_3.5px_rgba(0,0,0,0.05)] transition-colors hover:bg-[var(--bg-hover)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Copy aria-hidden className="size-3" strokeWidth={2} />
-            Copy
+            {copyLabel}
           </button>
         </div>
       </div>
@@ -199,13 +236,14 @@ function checkJsonSize(
   setStatus: (value: "valid" | "invalid" | "idle") => void,
   setErrorMsg: (value: string) => void,
   setOutputJson: (value: string) => void,
+  sizeError: (size: string, limit: string) => string,
 ) {
   if (size <= jsonHardLimitBytes) {
     return true;
   }
 
   setStatus("invalid");
-  setErrorMsg(`Input is ${formatBytes(size)}. JSON formatting is limited to ${formatBytes(jsonHardLimitBytes)}.`);
+  setErrorMsg(sizeError(formatBytes(size), formatBytes(jsonHardLimitBytes)));
   setOutputJson("");
   return false;
 }
