@@ -1,11 +1,12 @@
 import type { LucideIcon } from "lucide-react";
-import { Braces, GitCompareArrows, KeyRound, WholeWord } from "lucide-react";
+import { Braces, GitCompareArrows, KeyRound, ScanText, WholeWord } from "lucide-react";
 
 export type ToolSlug =
   | "dashboard"
   | "uuid-tools"
   | "json-formatter"
   | "text-diff"
+  | "text-extractor"
   | "character-counter";
 
 export type Tool = {
@@ -49,6 +50,15 @@ export const tools: Tool[] = [
     description: "Compare two texts and highlight differences.",
   },
   {
+    slug: "text-extractor",
+    href: "/text-extractor",
+    title: "Text Extractor",
+    section: "TEXT TOOLS",
+    icon: ScanText,
+    subtype: "OCR",
+    description: "Extract readable text from pasted or attached images.",
+  },
+  {
     slug: "character-counter",
     href: "/character-counter",
     title: "Character / Word Counter",
@@ -71,5 +81,6 @@ export const activeBySlug: Record<ToolSlug, string> = {
   "uuid-tools": "UUID Tools",
   "json-formatter": "JSON Formatter & Validator",
   "text-diff": "Text Diff",
+  "text-extractor": "Text Extractor",
   "character-counter": "Character / Word Counter",
 };
