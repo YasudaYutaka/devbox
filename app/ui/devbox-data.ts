@@ -4,6 +4,7 @@ import {
   CodeXml,
   GitCompareArrows,
   KeyRound,
+  ListTree,
   ScanText,
   WholeWord,
 } from "lucide-react";
@@ -12,6 +13,7 @@ export type ToolSlug =
   | "dashboard"
   | "uuid-tools"
   | "json-formatter"
+  | "json-escape"
   | "html-preview"
   | "text-diff"
   | "text-extractor"
@@ -49,6 +51,15 @@ export const tools: Tool[] = [
     icon: Braces,
     subtype: "Formatter & Validator",
     description: "Format, minify, and validate JSON.",
+  },
+  {
+    slug: "json-escape",
+    href: "/json-escape",
+    title: "JSON Escape / Unescape",
+    section: "FORMATTERS & VALIDATORS",
+    icon: ListTree,
+    subtype: "Encoder",
+    description: "Escape and unescape JSON string values.",
   },
   {
     slug: "html-preview",
@@ -99,6 +110,7 @@ export const activeBySlug: Record<ToolSlug, string> = {
   dashboard: "Dashboard",
   "uuid-tools": "UUID Tools",
   "json-formatter": "JSON Formatter & Validator",
+  "json-escape": "JSON Escape / Unescape",
   "html-preview": "HTML Preview",
   "text-diff": "Text Diff",
   "text-extractor": "Text Extractor",

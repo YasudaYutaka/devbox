@@ -43,6 +43,11 @@ export const labels = {
         subtype: "Formatter & Validator",
         description: "Format, minify, and validate JSON.",
       },
+      "json-escape": {
+        title: "JSON Escape / Unescape",
+        subtype: "Encoder",
+        description: "Escape and unescape JSON string values.",
+      },
       "html-preview": {
         title: "HTML Preview",
         subtype: "Preview",
@@ -105,6 +110,11 @@ export const labels = {
         title: "Formatador e Validador de JSON",
         subtype: "Formatador e Validador",
         description: "Formate, minifique e valide JSON.",
+      },
+      "json-escape": {
+        title: "Escape / Unescape de JSON",
+        subtype: "Codificador",
+        description: "Escape e reverta strings JSON.",
       },
       "html-preview": {
         title: "Prévia de HTML",
