@@ -1,10 +1,18 @@
 import type { LucideIcon } from "lucide-react";
-import { Braces, GitCompareArrows, KeyRound, ScanText, WholeWord } from "lucide-react";
+import {
+  Braces,
+  CodeXml,
+  GitCompareArrows,
+  KeyRound,
+  ScanText,
+  WholeWord,
+} from "lucide-react";
 
 export type ToolSlug =
   | "dashboard"
   | "uuid-tools"
   | "json-formatter"
+  | "html-preview"
   | "text-diff"
   | "text-extractor"
   | "character-counter";
@@ -41,6 +49,15 @@ export const tools: Tool[] = [
     icon: Braces,
     subtype: "Formatter & Validator",
     description: "Format, minify, and validate JSON.",
+  },
+  {
+    slug: "html-preview",
+    href: "/html-preview",
+    title: "HTML Preview",
+    section: "FORMATTERS & VALIDATORS",
+    icon: CodeXml,
+    subtype: "Preview",
+    description: "Edit markup and inspect a rendered preview.",
   },
   {
     slug: "text-diff",
@@ -82,6 +99,7 @@ export const activeBySlug: Record<ToolSlug, string> = {
   dashboard: "Dashboard",
   "uuid-tools": "UUID Tools",
   "json-formatter": "JSON Formatter & Validator",
+  "html-preview": "HTML Preview",
   "text-diff": "Text Diff",
   "text-extractor": "Text Extractor",
   "character-counter": "Character / Word Counter",

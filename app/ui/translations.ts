@@ -43,6 +43,11 @@ export const labels = {
         subtype: "Formatter & Validator",
         description: "Format, minify, and validate JSON.",
       },
+      "html-preview": {
+        title: "HTML Preview",
+        subtype: "Preview",
+        description: "Edit markup and inspect a rendered preview.",
+      },
       "text-diff": {
         title: "Text Diff",
         subtype: "Comparator",
@@ -100,6 +105,11 @@ export const labels = {
         title: "Formatador e Validador de JSON",
         subtype: "Formatador e Validador",
         description: "Formate, minifique e valide JSON.",
+      },
+      "html-preview": {
+        title: "Prévia de HTML",
+        subtype: "Prévia",
+        description: "Edite marcação e inspecione uma prévia renderizada.",
       },
       "text-diff": {
         title: "Comparador de Texto",
