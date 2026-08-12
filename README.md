@@ -50,6 +50,14 @@ DevBox is a local-first collection of developer utilities built with Next.js. It
 - **Character / Word Counter**:
   - Count characters, words, and lines as you type.
   - Clear the text input in one click.
+- **Snippets**:
+  - Save and organize text snippets locally in the browser (SQL, JSON, regex, shell commands, notes, or any plain text).
+  - Two-panel layout: snippet list with search and tag filtering on the left, editor on the right.
+  - Create, edit, and delete snippets with an explicit save action and delete confirmation.
+  - Tag snippets for quick filtering; tags are derived automatically from saved entries.
+  - Copy snippet body to clipboard in one click.
+  - Export all snippets to a JSON file and import from a previously exported file (merge, no data loss).
+  - All data is stored in `localStorage` under the key `devbox-snippets`; nothing is sent to a server.
 
 ## Tech Stack
 

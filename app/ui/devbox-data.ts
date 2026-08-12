@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Braces,
   CodeXml,
+  Database,
   GitCompareArrows,
   KeyRound,
   ListTree,
@@ -17,7 +18,8 @@ export type ToolSlug =
   | "html-preview"
   | "text-diff"
   | "text-extractor"
-  | "character-counter";
+  | "character-counter"
+  | "snippets";
 
 export type UtilityToolSlug = Exclude<ToolSlug, "dashboard">;
 
@@ -97,6 +99,15 @@ export const tools: Tool[] = [
     subtype: "Text Tool",
     description: "Count characters, words, and lines instantly.",
   },
+  {
+    slug: "snippets",
+    href: "/snippets",
+    title: "Snippets",
+    section: "STORAGE",
+    icon: Database,
+    subtype: "Storage",
+    description: "Save and organize text snippets locally in your browser.",
+  },
 ];
 
 export const sectionOrder = [
@@ -104,6 +115,7 @@ export const sectionOrder = [
   "FORMATTERS & VALIDATORS",
   "COMPARATORS",
   "TEXT TOOLS",
+  "STORAGE",
 ];
 
 export const activeBySlug: Record<ToolSlug, string> = {
@@ -115,4 +127,5 @@ export const activeBySlug: Record<ToolSlug, string> = {
   "text-diff": "Text Diff",
   "text-extractor": "Text Extractor",
   "character-counter": "Character / Word Counter",
+  snippets: "Snippets",
 };
