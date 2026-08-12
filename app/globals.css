@@ -79,3 +79,8 @@ button,
 a {
   outline-color: var(--primary);
 }
+
+@keyframes json-refresh {
+  0%   { background-color: color-mix(in srgb, var(--primary) 12%, transparent); }
+  100% { background-color: transparent; }
+}

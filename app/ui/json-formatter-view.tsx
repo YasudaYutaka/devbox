@@ -71,6 +71,7 @@ export function JsonFormatterPage() {
       };
   const [inputJson, setInputJson] = useState("");
   const [outputJson, setOutputJson] = useState("");
+  const [outputKey, setOutputKey] = useState(0);
   const [status, setStatus] = useState<"valid" | "invalid" | "idle">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [notice, setNotice] = useState("");
@@ -92,6 +93,7 @@ export function JsonFormatterPage() {
       setErrorMsg(r.error);
       setOutputJson("");
     }
+    setOutputKey((k) => k + 1);
   }
 
   function handleMinify() {
@@ -109,6 +111,7 @@ export function JsonFormatterPage() {
       setErrorMsg(r.error);
       setOutputJson("");
     }
+    setOutputKey((k) => k + 1);
   }
 
   function handleValidate() {
@@ -120,6 +123,7 @@ export function JsonFormatterPage() {
     setStatus(r.valid ? "valid" : "invalid");
     setErrorMsg(r.error);
     setOutputJson("");
+    setOutputKey((k) => k + 1);
   }
 
   async function handleCopy() {
@@ -163,9 +167,9 @@ export function JsonFormatterPage() {
           </JsonActionButton>
         </div>
       </div>
-      <div className="grid min-h-[620px] gap-4 lg:grid-cols-2">
+      <div className="grid h-[620px] gap-4 lg:grid-cols-2">
         <InputPanel title={pageText.input} value={inputJson} onChange={setInputJson} />
-        <OutputPanel title={pageText.output} value={outputJson} notice={notice} onCopy={handleCopy} copyLabel={labels.common.copy} />
+        <OutputPanel title={pageText.output} value={outputJson} animKey={outputKey} notice={notice} onCopy={handleCopy} copyLabel={labels.common.copy} />
       </div>
       {isOverSoftLimit && status !== "invalid" && (
         <p className="text-[12px] font-medium text-[var(--warning)]">
@@ -181,12 +185,12 @@ export function JsonFormatterPage() {
 
 function InputPanel({ title, value, onChange }: { title: string; value: string; onChange: (v: string) => void }) {
   return (
-    <Card className="flex min-h-[420px] flex-col">
+    <Card className="flex h-full flex-col">
       <div className="flex min-h-12 items-center gap-3 border-b border-[var(--border)] px-4 py-3">
         <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">{title}</h2>
       </div>
       <textarea
-        className="min-h-0 flex-1 resize-none bg-transparent p-4 font-mono text-xs leading-[1.6] text-[var(--text-primary)] outline-none"
+        className="min-h-0 flex-1 resize-none overflow-auto bg-transparent p-4 font-mono text-xs leading-[1.6] text-[var(--text-primary)] outline-none"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
@@ -198,18 +202,20 @@ function InputPanel({ title, value, onChange }: { title: string; value: string; 
 function OutputPanel({
   title,
   value,
+  animKey,
   notice,
   onCopy,
   copyLabel,
 }: {
   title: string;
   value: string;
+  animKey: number;
   notice: string;
   onCopy: () => void;
   copyLabel: string;
 }) {
   return (
-    <Card className="flex min-h-[420px] flex-col">
+    <Card className="flex h-full flex-col">
       <div className="flex min-h-12 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--bg-page)] px-4 py-3">
         <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">{title}</h2>
         <div className="flex items-center gap-2">
@@ -224,7 +230,11 @@ function OutputPanel({
           </button>
         </div>
       </div>
-      <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-[var(--bg-page)] p-4 font-mono text-xs leading-[1.6] text-[var(--text-primary)]">
+      <pre
+        key={animKey}
+        style={{ animation: animKey > 0 ? "json-refresh 0.6s ease-out" : undefined }}
+        className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap bg-[var(--bg-page)] p-4 font-mono text-xs leading-[1.6] text-[var(--text-primary)]"
+      >
         {value}
       </pre>
     </Card>
