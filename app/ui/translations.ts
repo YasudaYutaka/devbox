@@ -25,6 +25,7 @@ export const labels = {
       validate: "Validate",
       ready: "Ready",
       waiting: "Waiting",
+      new: "New",
     },
     sections: {
       generators: "GENERATORS",
@@ -240,6 +241,7 @@ export const labels = {
       validate: "Validar",
       ready: "Pronto",
       waiting: "Aguardando",
+      new: "Novo",
     },
     sections: {
       generators: "GERADORES",

@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Braces,
@@ -36,7 +37,72 @@ export type Tool = {
   subtype: string;
   description: string;
   status?: string;
+  /** ISO date (YYYY-MM-DD) the tool was added. Drives the "NEW" badge for 14 days. */
+  addedAt?: string;
 };
+
+const NEW_BADGE_DAYS = 14;
+
+export function isRecentlyAdded(addedAt?: string): boolean {
+  if (!addedAt) return false;
+  const added = new Date(`${addedAt}T00:00:00`).getTime();
+  if (isNaN(added)) return false;
+  const ageDays = (Date.now() - added) / 86400000;
+  return ageDays >= 0 && ageDays < NEW_BADGE_DAYS;
+}
+
+const SEEN_TOOLS_KEY = "devbox-seen-tools";
+const SEEN_CHANGE_EVENT = "devbox-seen-tools-change";
+const emptySeenTools = new Set<string>();
+let cachedSeenRaw = "";
+let cachedSeenTools = emptySeenTools;
+
+function readSeenTools(): Set<string> {
+  let raw = "[]";
+  try {
+    raw = localStorage.getItem(SEEN_TOOLS_KEY) ?? "[]";
+  } catch {}
+  if (raw === cachedSeenRaw) return cachedSeenTools;
+  cachedSeenRaw = raw;
+  try {
+    const arr: unknown = JSON.parse(raw);
+    cachedSeenTools = new Set(Array.isArray(arr) ? arr : []);
+  } catch {
+    cachedSeenTools = emptySeenTools;
+  }
+  return cachedSeenTools;
+}
+
+/** Marks a tool as visited so its "NEW" badge stops showing, even within the 14-day window. */
+export function markToolSeen(slug: UtilityToolSlug) {
+  const seen = readSeenTools();
+  if (seen.has(slug)) return;
+  const next = new Set(seen);
+  next.add(slug);
+  try {
+    localStorage.setItem(SEEN_TOOLS_KEY, JSON.stringify(Array.from(next)));
+  } catch {}
+  try {
+    window.dispatchEvent(new Event(SEEN_CHANGE_EVENT));
+  } catch {}
+}
+
+function subscribeSeenTools(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(SEEN_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(SEEN_CHANGE_EVENT, onChange);
+  };
+}
+
+function getServerSeenTools(): Set<string> {
+  return emptySeenTools;
+}
+
+export function useSeenTools(): Set<string> {
+  return useSyncExternalStore(subscribeSeenTools, readSeenTools, getServerSeenTools);
+}
 
 export const tools: Tool[] = [
   {
@@ -111,6 +177,7 @@ export const tools: Tool[] = [
     icon: Database,
     subtype: "Productivity",
     description: "Save and organize text snippets locally in your browser.",
+    addedAt: "2026-08-12",
   },
   {
     slug: "todo-board",
@@ -120,6 +187,7 @@ export const tools: Tool[] = [
     icon: KanbanSquare,
     subtype: "Productivity",
     description: "Track tasks on a local kanban board.",
+    addedAt: "2026-08-17",
   },
   {
     slug: "pomodoro-timer",
@@ -129,6 +197,7 @@ export const tools: Tool[] = [
     icon: Clock,
     subtype: "Productivity",
     description: "Focus in intervals with a Pomodoro or custom timer.",
+    addedAt: "2026-08-17",
   },
 ];
 

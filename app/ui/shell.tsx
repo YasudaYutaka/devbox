@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Box, ChevronLeft, ChevronRight, Home, Search, ShieldCheck } from "lucide-react";
-import { activeBySlug, sectionOrder, tools, type ToolSlug } from "./devbox-data";
+import {
+  activeBySlug,
+  isRecentlyAdded,
+  markToolSeen,
+  sectionOrder,
+  tools,
+  useSeenTools,
+  type ToolSlug,
+} from "./devbox-data";
 import { LanguageToggle } from "./language-toggle";
 import { useLanguage } from "./language";
 import { cx } from "./primitives";
@@ -29,6 +37,7 @@ export function DevBoxShell({
       const updated = [active, ...stored.filter((s) => s !== active)].slice(0, 2);
       localStorage.setItem("devbox-recently-used", JSON.stringify(updated));
     } catch {}
+    markToolSeen(active);
   }, [active]);
 
   return (
@@ -168,6 +177,7 @@ function Sidebar({
 }) {
   const isHome = active === "dashboard";
   const { locale } = useLanguage();
+  const seenTools = useSeenTools();
   const text = getLabels(locale);
 
   return (
@@ -240,6 +250,11 @@ function Sidebar({
                     strokeWidth={2}
                   />
                   {!collapsed && <span className="truncate">{localizedTool.title}</span>}
+                  {!collapsed && isRecentlyAdded(tool.addedAt) && !seenTools.has(tool.slug) && (
+                    <span className="ml-auto inline-flex h-4 shrink-0 items-center rounded-full bg-[var(--success-bg)] px-1.5 text-[9px] font-semibold uppercase tracking-[0.4px] text-[var(--success)]">
+                      {text.common.new}
+                    </span>
+                  )}
                 </Link>
               );
             })}

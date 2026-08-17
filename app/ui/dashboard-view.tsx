@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
-import { tools, type Tool } from "./devbox-data";
+import { isRecentlyAdded, tools, useSeenTools, type Tool } from "./devbox-data";
 import { DevBoxShell } from "./shell";
 import { useLanguage } from "./language";
 import { cx } from "./primitives";
@@ -18,6 +18,7 @@ export function DashboardPage() {
   const { locale } = useLanguage();
   const text = getLabels(locale);
   const [selected, setSelected] = useState<string | null>(null);
+  const seenTools = useSeenTools();
   const recentTools = useSyncExternalStore(
     subscribeToRecentlyUsed,
     getRecentlyUsedTools,
@@ -57,7 +58,14 @@ export function DashboardPage() {
                       <Icon aria-hidden className="size-[18px]" strokeWidth={2} />
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-sm font-semibold">{localizedTool.title}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold">{localizedTool.title}</span>
+                        {isRecentlyAdded(tool.addedAt) && !seenTools.has(tool.slug) && (
+                          <span className="inline-flex h-4 shrink-0 items-center rounded-full bg-[var(--success-bg)] px-1.5 text-[9px] font-semibold uppercase tracking-[0.4px] text-[var(--success)]">
+                            {text.common.new}
+                          </span>
+                        )}
+                      </span>
                       <span className="truncate text-[10px] font-medium text-[var(--primary)]">
                         {localizedTool.subtype}
                       </span>
