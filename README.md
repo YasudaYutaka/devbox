@@ -65,6 +65,13 @@ DevBox is a local-first collection of developer utilities built with Next.js. It
   - Search tasks by title, notes, or tags, and filter by tag.
   - Export all tasks to a JSON file and import from a previously exported file (merge, no data loss).
   - All data is stored in `localStorage` under the key `devbox-todos`; nothing is sent to a server.
+- **Pomodoro Timer**:
+  - Pomodoro mode: focus/short-break/long-break cycles with a session counter and a circular progress ring.
+  - Custom mode: countdown timer with a `mm:ss` input and quick presets (5m, 10m, 25m).
+  - Adjustable focus, short break, long break, and sessions-before-long-break durations, saved locally.
+  - Mute toggle for the completion sound.
+  - Today summary: sessions completed and total focused time, resetting daily.
+  - Settings, mute preference, and today's stats are stored in `localStorage`; nothing is sent to a server.
 
 ## Tech Stack
 

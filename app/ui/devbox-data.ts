@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Braces,
+  Clock,
   CodeXml,
   Database,
   GitCompareArrows,
@@ -21,7 +22,8 @@ export type ToolSlug =
   | "text-extractor"
   | "character-counter"
   | "snippets"
-  | "todo-board";
+  | "todo-board"
+  | "pomodoro-timer";
 
 export type UtilityToolSlug = Exclude<ToolSlug, "dashboard">;
 
@@ -119,6 +121,15 @@ export const tools: Tool[] = [
     subtype: "Productivity",
     description: "Track tasks on a local kanban board.",
   },
+  {
+    slug: "pomodoro-timer",
+    href: "/pomodoro-timer",
+    title: "Pomodoro Timer",
+    section: "PRODUCTIVITY",
+    icon: Clock,
+    subtype: "Productivity",
+    description: "Focus in intervals with a Pomodoro or custom timer.",
+  },
 ];
 
 export const sectionOrder = [
@@ -140,4 +151,5 @@ export const activeBySlug: Record<ToolSlug, string> = {
   "character-counter": "Character / Word Counter",
   snippets: "Snippets",
   "todo-board": "TODO Board",
+  "pomodoro-timer": "Pomodoro Timer",
 };
