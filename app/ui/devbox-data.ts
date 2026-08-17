@@ -4,6 +4,7 @@ import {
   CodeXml,
   Database,
   GitCompareArrows,
+  KanbanSquare,
   KeyRound,
   ListTree,
   ScanText,
@@ -19,7 +20,8 @@ export type ToolSlug =
   | "text-diff"
   | "text-extractor"
   | "character-counter"
-  | "snippets";
+  | "snippets"
+  | "todo-board";
 
 export type UtilityToolSlug = Exclude<ToolSlug, "dashboard">;
 
@@ -103,10 +105,19 @@ export const tools: Tool[] = [
     slug: "snippets",
     href: "/snippets",
     title: "Snippets",
-    section: "STORAGE",
+    section: "PRODUCTIVITY",
     icon: Database,
-    subtype: "Storage",
+    subtype: "Productivity",
     description: "Save and organize text snippets locally in your browser.",
+  },
+  {
+    slug: "todo-board",
+    href: "/todo-board",
+    title: "TODO Board",
+    section: "PRODUCTIVITY",
+    icon: KanbanSquare,
+    subtype: "Productivity",
+    description: "Track tasks on a local kanban board.",
   },
 ];
 
@@ -115,7 +126,7 @@ export const sectionOrder = [
   "FORMATTERS & VALIDATORS",
   "COMPARATORS",
   "TEXT TOOLS",
-  "STORAGE",
+  "PRODUCTIVITY",
 ];
 
 export const activeBySlug: Record<ToolSlug, string> = {
@@ -128,4 +139,5 @@ export const activeBySlug: Record<ToolSlug, string> = {
   "text-extractor": "Text Extractor",
   "character-counter": "Character / Word Counter",
   snippets: "Snippets",
+  "todo-board": "TODO Board",
 };

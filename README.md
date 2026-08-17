@@ -58,6 +58,13 @@ DevBox is a local-first collection of developer utilities built with Next.js. It
   - Copy snippet body to clipboard in one click.
   - Export all snippets to a JSON file and import from a previously exported file (merge, no data loss).
   - All data is stored in `localStorage` under the key `devbox-snippets`; nothing is sent to a server.
+- **TODO Board**:
+  - Track tasks on a kanban board with To Do, In Progress, and Done columns.
+  - Drag and drop cards between columns to change status.
+  - Create, edit, and delete tasks with priority, due date, tags, notes, and subtasks.
+  - Search tasks by title, notes, or tags, and filter by tag.
+  - Export all tasks to a JSON file and import from a previously exported file (merge, no data loss).
+  - All data is stored in `localStorage` under the key `devbox-todos`; nothing is sent to a server.
 
 ## Tech Stack
 

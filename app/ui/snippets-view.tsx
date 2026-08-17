@@ -201,7 +201,7 @@ export function SnippetsPage() {
       <Breadcrumbs
         items={[
           { label: "DevBox", href: "/" },
-          { label: t.breadcrumbStorage },
+          { label: t.breadcrumbProductivity },
           { label: "Snippets" },
         ]}
       />
